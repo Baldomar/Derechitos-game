@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH } from '@/config/theme';
+import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '@/config/theme';
 import type { DayNightContent } from '@/config/levels';
 import { artImage, type ArtKey } from '@/art/Art';
 import { DraggableItem, type DropDecision } from '@/components/DraggableItem';
@@ -9,6 +9,7 @@ import { addStarIcon } from '@/components/Icons';
 import { addBody } from '@/components/Text';
 import { motion } from '@/core/Device';
 import { BaseLevel } from './BaseLevel';
+import { setPageBackground } from '@/core/PageBackground';
 
 const DAY = { x: 330, y: 250 };
 const NIGHT = { x: 950, y: 250 };
@@ -85,6 +86,11 @@ export default class Level06Scene extends BaseLevel {
     await this.wait(motion(1700));
     if (!this.alive) return;
     // Se divide el cielo: día a la izquierda, noche a la derecha.
+    // Borde derecho de noche (mismo tono que el cielo oscurecido).
+    setPageBackground(
+      { top: COLORS.sky, bottom: COLORS.grass, split: 630 },
+      { top: 0x33406a, bottom: 0x2c4f3a, split: 630 },
+    );
     this.tweens.add({
       targets: this.night,
       x: GAME_WIDTH / 2,

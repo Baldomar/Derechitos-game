@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '@/config/theme';
 import { bakedTexture } from '@/core/Bake';
+import { setPageBackground } from '@/core/PageBackground';
 
 export interface BackdropOptions {
   sky?: number;
@@ -37,10 +38,16 @@ export function addBackdrop(
       }
     }
     if (grass) {
-      g.fillStyle(COLORS.grassDark).fillEllipse(GAME_WIDTH * 0.25, GAME_HEIGHT + 40, 1100, 360);
-      g.fillStyle(COLORS.grass).fillEllipse(GAME_WIDTH * 0.75, GAME_HEIGHT + 60, 1300, 380);
-      g.fillStyle(COLORS.grass).fillRect(0, GAME_HEIGHT - 90, GAME_WIDTH, 90);
+      // Las colinas no tocan los bordes: ahí el pasto empieza siempre en GROUND_Y,
+      // para que continúe sin cortes en las franjas laterales de la pantalla.
+      g.fillStyle(COLORS.grassDark).fillEllipse(380, GAME_HEIGHT + 40, 760, 300);
+      g.fillStyle(COLORS.grass).fillEllipse(900, GAME_HEIGHT + 40, 900, 300);
+      g.fillStyle(COLORS.grass).fillRect(0, GROUND_Y, GAME_WIDTH, GAME_HEIGHT - GROUND_Y);
     }
   });
+  setPageBackground(grass ? { top: sky, bottom: COLORS.grass, split: GROUND_Y } : { top: sky });
   return scene.add.image(0, 0, key).setOrigin(0);
 }
+
+/** Altura donde empieza el pasto del fondo en los bordes de la pantalla. */
+export const GROUND_Y = GAME_HEIGHT - 90;

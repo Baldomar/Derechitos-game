@@ -15,6 +15,7 @@ import { bakedTexture } from '@/core/Bake';
 import { motion, prefersReducedMotion } from '@/core/Device';
 import { GameState } from '@/core/GameState';
 import { goTo, prefetchScene } from '@/core/SceneTransition';
+import { setPageBackground } from '@/core/PageBackground';
 
 const NODE_R = 54; // 108 px de diámetro (> 88 px mínimo)
 
@@ -27,6 +28,7 @@ export default class WorldMapScene extends Phaser.Scene {
   create(): void {
     ensureArt(this, ['palmera', 'izote', 'arbol', 'nube', ...LEVELS.map((l) => l.icon)]);
     this.drawIsland();
+    setPageBackground({ top: COLORS.sea });
     this.drawPath();
     const current = GameState.currentLevel;
     for (const level of LEVELS)

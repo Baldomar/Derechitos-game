@@ -9,6 +9,7 @@ import { addBody } from '@/components/Text';
 import { AudioManager } from '@/core/AudioManager';
 import { motion } from '@/core/Device';
 import { BaseLevel } from './BaseLevel';
+import { setPageBackground } from '@/core/PageBackground';
 
 const LOW = 476; // suelo de afuera
 const HIGH = 386; // suelo del parque (más alto: hay un escalón)
@@ -54,6 +55,11 @@ export default class Level05Scene extends BaseLevel {
 
   protected override buildLevel(): void {
     this.c = this.contentOf('park');
+    // Afuera (izquierda) el camino está más abajo que el parque (derecha).
+    setPageBackground(
+      { top: COLORS.sky, bottom: COLORS.sand, split: LOW },
+      { top: COLORS.sky, bottom: COLORS.grass, split: HIGH },
+    );
     const g = this.add.graphics();
     // Afuera (camino) y parque elevado con escalón.
     g.fillStyle(COLORS.sand).fillRect(0, LOW, STEP_X, GAME_HEIGHT - LOW);

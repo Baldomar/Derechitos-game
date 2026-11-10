@@ -3,6 +3,7 @@ import { CSS, GAME_HEIGHT, GAME_WIDTH } from '@/config/theme';
 import BootScene from '@/scenes/Boot';
 import PreloadScene from '@/scenes/Preload';
 import { AudioManager } from '@/core/AudioManager';
+import { initPageBackground } from '@/core/PageBackground';
 
 /**
  * Solo Boot y Preload van en el bundle inicial; el resto de escenas se descargan
@@ -28,6 +29,7 @@ const config: Phaser.Types.Core.GameConfig = {
 
 AudioManager.init();
 const game = new Phaser.Game(config);
+initPageBackground(game);
 
 // Solo en desarrollo: atajo para pruebas automáticas (no se incluye en el build de producción).
 if (import.meta.env.DEV) {

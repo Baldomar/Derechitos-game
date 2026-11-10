@@ -9,6 +9,7 @@ import { addBody } from '@/components/Text';
 import { AudioManager } from '@/core/AudioManager';
 import { motion, prefersReducedMotion } from '@/core/Device';
 import { BaseLevel } from './BaseLevel';
+import { setPageBackground } from '@/core/PageBackground';
 
 /** Posición final de cada pieza de la casa y su profundidad. */
 const HOUSE: Record<
@@ -71,6 +72,7 @@ export default class Level01Scene extends BaseLevel {
     this.c = this.contentOf('house');
     const ground = this.add.graphics();
     ground.fillStyle(COLORS.grass).fillRect(0, 476, GAME_WIDTH, GAME_HEIGHT - 476);
+    setPageBackground({ top: COLORS.sky, bottom: COLORS.grass, split: 476 });
     ground.fillStyle(COLORS.sand).fillRect(840, 476, 80, GAME_HEIGHT - 476);
 
     this.darkness = this.add
