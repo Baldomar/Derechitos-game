@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS, CSS } from '@/config/theme';
 import type { LevelDef } from '@/config/levels';
+import type { RightArea } from '@/config/rights';
 import { artImage } from '@/art/Art';
 import { addLockIcon } from './Icons';
 import { addBody } from './Text';
@@ -59,4 +60,30 @@ export function addSticker(
     parts.push(addBody(scene, 0, s * 0.33, `Zona ${level.number}`, Math.round(s * 0.11)));
   }
   return scene.add.container(x, y, parts);
+}
+
+/** Medalla de un derecho de la Villa (color e ícono del derecho). Sin ganar: gris con "?". */
+export function addRightMedal(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  right: RightArea,
+  earned: boolean,
+  scale = 1,
+): Phaser.GameObjects.Container {
+  const g = scene.add.graphics();
+  const color = earned ? right.color : COLORS.locked;
+  g.fillStyle(earned ? COLORS.coral : 0x9aa5b8).fillTriangle(-40, -90, -6, -90, -24, -20);
+  g.fillStyle(earned ? COLORS.turquoise : 0x9aa5b8).fillTriangle(6, -90, 40, -90, 24, -20);
+  g.lineStyle(4, COLORS.ink)
+    .strokeTriangle(-40, -90, -6, -90, -24, -20)
+    .strokeTriangle(6, -90, 40, -90, 24, -20);
+  g.fillStyle(COLORS.ink, 0.25).fillCircle(0, 8, 60);
+  g.fillStyle(color).fillCircle(0, 0, 60);
+  g.lineStyle(6, COLORS.ink).strokeCircle(0, 0, 60);
+  g.fillStyle(COLORS.white, 0.45).fillCircle(0, 0, 46);
+  const parts: Phaser.GameObjects.GameObject[] = [g];
+  if (earned) parts.push(artImage(scene, 0, 0, right.icon).setScale(0.72));
+  else parts.push(addBody(scene, 0, 2, '?', 56, { color: CSS.ink }));
+  return scene.add.container(x, y, parts).setScale(scale);
 }

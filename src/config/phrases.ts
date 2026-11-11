@@ -11,9 +11,9 @@ export const INTRO_LINES: VoiceLine[] = [
   { id: 'intro_01', text: '¡Hola! Soy Tori, un torogoz de El Salvador.' },
   {
     id: 'intro_02',
-    text: 'Vivo en la Isla Derechitos. ¡Aquí aprendemos nuestros derechos jugando!',
+    text: 'Juntos vamos a conocer nuestros derechos jugando. ¡Será muy divertido!',
   },
-  { id: 'intro_03', text: 'En cada zona ganarás estrellas y una medalla. ¿Me acompañas?' },
+  { id: 'intro_03', text: 'En cada juego ganarás estrellas y medallas. ¿Me acompañas?' },
 ];
 
 /** Elogios variados para cada acierto. */
@@ -70,3 +70,40 @@ export const FINAL_LINES: VoiceLine[] = [
     text: 'Recuerda: todas las niñas y niños tienen derechos. ¡Cuídalos y compártelos!',
   },
 ];
+
+// ---------------------------------------------------------------- Villa de los Derechos
+
+export const VILLA_HELLO: VoiceLine = {
+  id: 'villa_hello',
+  text: '¡Bienvenido a la Isla Derechitos! Toca una zona para conocer tu derecho.',
+};
+export const VILLA_START: VoiceLine = {
+  id: 'villa_start',
+  text: 'Empieza por la zona de la salud. ¡Tócala!',
+};
+export const HUB_GAMES: VoiceLine = {
+  id: 'hub_games',
+  text: 'Toca un juego para empezar. Cuando termines los juegos, se abren los desafíos.',
+};
+export const HUB_LOCKED: VoiceLine = {
+  id: 'hub_locked',
+  text: 'Este desafío se abre cuando termines todos los juegos.',
+};
+export const HUB_FINAL_LOCKED: VoiceLine = {
+  id: 'hub_final_locked',
+  text: 'Completa los otros desafíos para abrir el desafío final.',
+};
+export const HUB_SOON: VoiceLine = { id: 'hub_soon', text: '¡Este juego llegará muy pronto!' };
+export const TRY_AGAIN: VoiceLine = { id: 'try_again', text: '¡Inténtalo otra vez!' };
+export const CHALLENGES_OPEN: VoiceLine = {
+  id: 'challenges_open',
+  text: '¡Desbloqueaste los desafíos!',
+};
+export const MEDALS_HELLO: VoiceLine = {
+  id: 'medals_hello',
+  text: 'Estas son tus medallas. ¡Sigue jugando para ganar más!',
+};
+export const SEQUENCE_DONE_ORDER: VoiceLine = {
+  id: 'sequence_order',
+  text: '¡Muy bien! Ese paso va ahí.',
+};

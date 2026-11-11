@@ -45,7 +45,10 @@ export function addBackdrop(
       g.fillStyle(COLORS.grass).fillRect(0, GROUND_Y, GAME_WIDTH, GAME_HEIGHT - GROUND_Y);
     }
   });
-  setPageBackground(grass ? { top: sky, bottom: COLORS.grass, split: GROUND_Y } : { top: sky });
+  setPageBackground(
+    scene,
+    grass ? { top: sky, bottom: COLORS.grass, split: GROUND_Y } : { top: sky },
+  );
   return scene.add.image(0, 0, key).setOrigin(0);
 }
 

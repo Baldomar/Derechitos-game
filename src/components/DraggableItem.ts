@@ -5,7 +5,9 @@ import { motion, prefersReducedMotion } from '@/core/Device';
 import type { DropZone, Point } from './DropZone';
 
 /** Qué hacer al soltar: aceptar (se acomoda), rechazar (rebota con pista) o ignorar (regresa). */
-export type DropDecision = 'accept' | 'reject' | 'ignore';
+export type DropDecision = 'accept' | 'reject' | 'ignore' | { placeIn: DropZone };
+
+export type ScaleSpec = number | { x: number; y: number };
 
 export interface DraggableItemOptions {
   id: string;
@@ -16,7 +18,17 @@ export interface DraggableItemOptions {
   zones: DropZone[];
   onDrop: (item: DraggableItem, zone: DropZone | null) => DropDecision;
   onPick?: (item: DraggableItem) => void;
+  /** Escala final al quedar acomodado (p. ej. 1 = mismo tamaño que la silueta). */
+  placedScale?: ScaleSpec;
+  /**
+   * Piezas de "armar": al tomarlas crecen a su tamaño final (placedScale) para que el niño
+   * vea cómo encajan con la silueta; si regresan a su sitio vuelven a su tamaño pequeño.
+   */
+  growOnDrag?: boolean;
 }
+
+const toXY = (s: ScaleSpec): { x: number; y: number } =>
+  typeof s === 'number' ? { x: s, y: s } : s;
 
 /**
  * Objeto arrastrable con "juice": se agranda al tomarlo, se inclina según el movimiento,
@@ -25,10 +37,13 @@ export interface DraggableItemOptions {
 export class DraggableItem extends Phaser.GameObjects.Container {
   readonly itemId: string;
   private home: Point;
+  private homeScale: { x: number; y: number } | null = null;
   private readonly visual: Phaser.GameObjects.Container;
   private zones: DropZone[];
   private readonly onDropCb: DraggableItemOptions['onDrop'];
   private readonly onPickCb: DraggableItemOptions['onPick'];
+  private readonly placedScale: { x: number; y: number } | null;
+  private readonly growOnDrag: boolean;
   private baseDepth = 0;
   private placed = false;
 
@@ -39,6 +54,8 @@ export class DraggableItem extends Phaser.GameObjects.Container {
     this.zones = opts.zones;
     this.onDropCb = opts.onDrop;
     this.onPickCb = opts.onPick;
+    this.placedScale = opts.placedScale === undefined ? null : toXY(opts.placedScale);
+    this.growOnDrag = opts.growOnDrag ?? false;
 
     this.visual = scene.add.container(0, 0, opts.content);
     this.add(this.visual);
@@ -64,15 +81,32 @@ export class DraggableItem extends Phaser.GameObjects.Container {
     return this;
   }
 
+  /** Tamaño "en reposo" (el que tiene en su sitio de origen). */
+  private restScale(): { x: number; y: number } {
+    return this.homeScale ?? { x: this.scaleX, y: this.scaleY };
+  }
+
   private handleDragStart(): void {
     if (this.placed) return;
+    if (!this.homeScale) this.homeScale = { x: this.scaleX, y: this.scaleY };
     this.baseDepth = this.depth;
     this.setDepth(DEPTH.overlay - 1);
     this.scene.tweens.killTweensOf([this, this.visual]);
     AudioManager.sfx('pop', { pitch: 1.3 });
+    const grow = this.growOnDrag && this.placedScale;
+    if (grow) {
+      // Pieza de armar: toma su tamaño real (igual a la silueta) mientras se arrastra.
+      this.scene.tweens.add({
+        targets: this,
+        scaleX: grow.x,
+        scaleY: grow.y,
+        duration: motion(180),
+        ease: 'Back.easeOut',
+      });
+    }
     this.scene.tweens.add({
       targets: this.visual,
-      scale: 1.15,
+      scale: grow ? 1.04 : 1.15,
       duration: motion(150),
       ease: 'Back.easeOut',
     });
@@ -84,7 +118,8 @@ export class DraggableItem extends Phaser.GameObjects.Container {
     const dx = dragX - this.x;
     this.setPosition(dragX, dragY);
     if (!prefersReducedMotion()) {
-      const tilt = Phaser.Math.Clamp(dx * 1.2, -14, 14);
+      const max = this.growOnDrag ? 5 : 14;
+      const tilt = Phaser.Math.Clamp(dx * 1.2, -max, max);
       this.visual.angle = Phaser.Math.Linear(this.visual.angle, tilt, 0.3);
     }
     for (const z of this.zones) z.setHover(z.contains(this.x, this.y));
@@ -96,29 +131,41 @@ export class DraggableItem extends Phaser.GameObjects.Container {
     this.setDepth(this.baseDepth);
     const zone = this.zones.find((z) => z.contains(this.x, this.y)) ?? null;
     const decision = this.onDropCb(this, zone);
-    if (decision === 'accept' && zone) this.placeIn(zone);
+    if (typeof decision === 'object') this.placeIn(decision.placeIn);
+    else if (decision === 'accept' && zone) this.placeIn(zone);
     else if (decision === 'reject') this.bounceHome();
     else this.returnHome();
   }
 
-  /** Se acomoda en la zona con squash & stretch y queda fijo. */
+  /** Se acomoda en la zona con squash & stretch, con su tamaño final, y queda fijo. */
   placeIn(zone: DropZone): void {
     this.placed = true;
     this.disableInteractive();
     const slot = zone.takeSlot();
     zone.pulse();
     this.scene.tweens.killTweensOf([this, this.visual]);
+    const final = this.placedScale ?? { x: this.scaleX, y: this.scaleY };
     this.scene.tweens.add({
       targets: this,
       x: slot.x,
       y: slot.y,
+      scaleX: final.x,
+      scaleY: final.y,
       duration: motion(260),
       ease: 'Back.easeOut',
     });
+    // Las piezas de armar encajan con un aplastón suave (sin deformarse de más).
+    const squash = this.growOnDrag ? { x: 1.06, y: 0.95 } : { x: 1.25, y: 0.8 };
     this.scene.tweens.chain({
       targets: this.visual,
       tweens: [
-        { angle: 0, scaleX: 1.25, scaleY: 0.8, duration: motion(120), ease: 'Quad.easeOut' },
+        {
+          angle: 0,
+          scaleX: squash.x,
+          scaleY: squash.y,
+          duration: motion(120),
+          ease: 'Quad.easeOut',
+        },
         { scaleX: 1, scaleY: 1, duration: motion(420), ease: 'Elastic.easeOut' },
       ],
     });
@@ -126,10 +173,13 @@ export class DraggableItem extends Phaser.GameObjects.Container {
 
   /** Regreso suave (soltó fuera de cualquier zona). */
   returnHome(): void {
+    const s = this.restScale();
     this.scene.tweens.add({
       targets: this,
       x: this.home.x,
       y: this.home.y,
+      scaleX: s.x,
+      scaleY: s.y,
       duration: motion(320),
       ease: 'Cubic.easeOut',
     });
@@ -138,10 +188,13 @@ export class DraggableItem extends Phaser.GameObjects.Container {
 
   /** Rebote elástico de vuelta (no era ahí): nunca castiga, solo invita a intentar otra vez. */
   bounceHome(): void {
+    const s = this.restScale();
     this.scene.tweens.add({
       targets: this,
       x: this.home.x,
       y: this.home.y,
+      scaleX: s.x,
+      scaleY: s.y,
       duration: motion(560),
       ease: 'Back.easeOut',
     });

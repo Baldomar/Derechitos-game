@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
 import { COLORS, CSS, FONTS, GAME_WIDTH, TEXT_RESOLUTION } from '@/config/theme';
-import { LEVELS, RIGHTS } from '@/config/levels';
+import { RIGHT_AREAS } from '@/config/rights';
 import { FINAL_LINES } from '@/config/phrases';
 import { ensureArt, tex } from '@/art/Art';
 import { addBackdrop } from '@/components/Backdrop';
-import { addMedal } from '@/components/Badges';
+import { addRightMedal } from '@/components/Badges';
 import { BigButton } from '@/components/BigButton';
 import { Effects } from '@/components/Effects';
 import { addStarIcon } from '@/components/Icons';
@@ -18,7 +18,7 @@ import { goTo } from '@/core/SceneTransition';
 
 const CX = 720;
 
-/** Diploma animado "Guardián de los Derechos" con estrellas, medallas y todos los derechos aprendidos. */
+/** Diploma animado "Guardián de los Derechos": estrellas, medallas y los derechos de la isla. */
 export default class FinalScene extends Phaser.Scene {
   constructor() {
     super('Final');
@@ -26,7 +26,10 @@ export default class FinalScene extends Phaser.Scene {
 
   create(): void {
     GameState.markFinalSeen();
-    ensureArt(this, [...LEVELS.map((l) => l.icon), ...Object.values(RIGHTS).map((r) => r.icon)]);
+    ensureArt(
+      this,
+      RIGHT_AREAS.map((r) => r.icon),
+    );
     addBackdrop(this, { sky: COLORS.sun, grass: false });
     const effects = new Effects(this);
 
@@ -48,27 +51,26 @@ export default class FinalScene extends Phaser.Scene {
     d.add(addTitle(this, 0, -182, 'Guardián de los Derechos', 58, { color: CSS.grape }));
     d.add(addBody(this, 0, -134, 'Isla Derechitos', 22));
 
-    // Estrellas y medallas.
+    // Estrellas y medallas de cada derecho.
+    const max = RIGHT_AREAS.reduce((s, r) => s + GameState.rightStars(r).max, 0);
     d.add(addStarIcon(this, -110, -86, 22, true));
-    d.add(addTitle(this, -20, -84, `${GameState.totalStars} / ${GameState.maxStars}`, 34));
-    LEVELS.forEach((l, i) => {
-      const m = addMedal(this, -385 + i * 110, -10, l, 0.36);
-      if (!GameState.isCompleted(l.id)) m.setAlpha(0.3);
-      d.add(m);
+    d.add(addTitle(this, -10, -84, `${GameState.totalRightStars} / ${max}`, 34));
+    RIGHT_AREAS.forEach((r, i) => {
+      d.add(addRightMedal(this, -392 + i * 112, -4, r, GameState.hasRightMedal(r), 0.38));
     });
 
-    // Derechos aprendidos con su ícono.
-    Object.values(RIGHTS).forEach((r, i) => {
+    // Derechos de la isla con su ícono.
+    RIGHT_AREAS.forEach((r, i) => {
       const col = i % 2;
       const row = Math.floor(i / 2);
-      const x = col === 0 ? -440 : 20;
-      const y = 70 + row * 48;
-      d.add(this.add.image(x + 16, y, tex(r.icon)).setScale(0.36));
+      const x = col === 0 ? -440 : -15;
+      const y = 78 + row * 48;
+      d.add(this.add.image(x + 16, y, tex(r.icon)).setScale(0.38));
       d.add(
         this.add
-          .text(x + 44, y, r.name, {
+          .text(x + 46, y, r.name, {
             fontFamily: FONTS.body,
-            fontSize: '20px',
+            fontSize: '21px',
             fontStyle: '800',
             color: CSS.ink,
             resolution: TEXT_RESOLUTION,
@@ -124,7 +126,7 @@ export default class FinalScene extends Phaser.Scene {
     this.time.addEvent({ delay: 4500, loop: true, callback: () => effects.celebrate() });
 
     new BigButton(this, GAME_WIDTH - 280, 650, {
-      label: 'Mapa',
+      label: 'Isla',
       width: 190,
       height: 88,
       fontSize: 36,
@@ -132,12 +134,12 @@ export default class FinalScene extends Phaser.Scene {
       onClick: () => void goTo(this, 'WorldMap'),
     });
     new BigButton(this, GAME_WIDTH - 90, 650, {
-      label: 'Álbum',
+      label: 'Medallas',
       width: 170,
       height: 88,
-      fontSize: 36,
-      color: COLORS.grape,
-      onClick: () => void goTo(this, 'Album'),
+      fontSize: 30,
+      color: COLORS.sun,
+      onClick: () => void goTo(this, 'Medals'),
     });
   }
 }

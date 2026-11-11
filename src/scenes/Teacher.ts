@@ -32,7 +32,7 @@ export default class TeacherScene extends Phaser.Scene {
     // ---- Columna izquierda: acciones ----
     const lx = 250;
     new BigButton(this, lx, 190, {
-      label: GameState.unlockAll ? 'Bloquear niveles' : 'Desbloquear todo',
+      label: GameState.unlockAll ? 'Cerrar desafíos' : 'Abrir desafíos',
       width: 400,
       height: 90,
       fontSize: 34,
@@ -161,9 +161,10 @@ export default class TeacherScene extends Phaser.Scene {
   }
 
   private statusText(): string {
-    return `Estrellas: ${GameState.totalStars}/${GameState.maxStars} · Niveles completados: ${GameState.completedCount}/8 · ${
-      GameState.unlockAll ? 'Todo desbloqueado' : 'Desbloqueo secuencial'
-    }`;
+    const challenges = GameState.unlockAll
+      ? 'Todos los desafíos abiertos'
+      : 'Desafíos: se abren al terminar los juegos';
+    return `Estrellas: ${GameState.totalRightStars} · Medallas: ${GameState.rightMedalCount}/8 · ${challenges}`;
   }
 
   private audioText(): string {

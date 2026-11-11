@@ -236,6 +236,17 @@ function person(g: G, w: number, h: number, o: PersonOpts): void {
   }
 }
 
+/** Dos manos (palmas con dedos) para los pasos de lavado. */
+function hands(g: G, cx: number, cy: number): void {
+  const skin = SKIN[2];
+  for (const side of [-1, 1]) {
+    const x = cx + side * 17;
+    rect(g, x - 14, cy - 16, 28, 34, 12, skin);
+    for (let i = 0; i < 3; i++) rect(g, x - 12 + i * 8, cy - 30, 7, 18, 3, skin, 3);
+    rect(g, x + side * 12 - 4, cy - 10, 9, 16, 4, skin, 3);
+  }
+}
+
 // ------------------------------------------------------------------ catálogo
 
 interface ArtDef {
@@ -785,8 +796,10 @@ export const ART = {
     w: 200,
     h: 100,
     draw: (g) => {
-      poly(g, [6, 94, 194, 94, 194, 8], 0xd9a86c, 5);
-      for (let i = 1; i < 5; i++) line(g, 6 + i * 38, 94 - i * 17.2, 6 + i * 38, 94, 2, 0xb07a45);
+      // Llena toda su caja: así, escalada, encaja exacto entre el suelo y el escalón.
+      poly(g, [2, 98, 198, 98, 198, 2], 0xd9a86c, 5);
+      for (let i = 1; i < 5; i++)
+        line(g, 2 + i * 39.2, 98 - i * 19.2, 2 + i * 39.2, 98, 2, 0xb07a45);
     },
   },
   escalera: {
@@ -1210,6 +1223,196 @@ export const ART = {
       g.fillStyle(0xf2e08a).fillCircle(64, 66, 12).fillCircle(106, 108, 9).fillCircle(110, 62, 7);
       arc(g, 72, 88, 9, 0.1 * PI, 0.9 * PI, 4);
       arc(g, 104, 88, 9, 0.1 * PI, 0.9 * PI, 4);
+    },
+  },
+
+  // ---------------- Derecho a la salud: hábitos y pasos ----------------
+  'paso-mojar': {
+    w: 120,
+    h: 120,
+    draw: (g) => {
+      rect(g, 30, 8, 60, 16, 6, 0xc9d2dc);
+      rect(g, 70, 20, 14, 22, 4, 0xc9d2dc);
+      for (const [x, y] of [
+        [72, 52],
+        [80, 62],
+        [70, 70],
+      ] as const)
+        ellipse(g, x, y, 8, 12, COLORS.sky, 2);
+      hands(g, 60, 92);
+    },
+  },
+  'paso-jabon': {
+    w: 120,
+    h: 120,
+    draw: (g) => {
+      rect(g, 22, 50, 76, 44, 18, COLORS.pink);
+      g.fillStyle(COLORS.white, 0.5).fillRoundedRect(32, 56, 40, 10, 5);
+      for (const [x, y, r] of [
+        [40, 34, 10],
+        [62, 24, 13],
+        [84, 36, 9],
+        [96, 20, 6],
+      ] as const) {
+        circle(g, x, y, r, COLORS.white, 3);
+      }
+    },
+  },
+  'paso-frotar': {
+    w: 120,
+    h: 120,
+    draw: (g) => {
+      hands(g, 60, 66);
+      for (const [x, y, r] of [
+        [22, 40, 9],
+        [98, 36, 11],
+        [30, 96, 8],
+        [94, 92, 9],
+        [60, 20, 10],
+      ] as const) {
+        circle(g, x, y, r, COLORS.white, 3);
+      }
+    },
+  },
+  'paso-enjuagar': {
+    w: 120,
+    h: 120,
+    draw: (g) => {
+      rect(g, 30, 8, 60, 16, 6, 0xc9d2dc);
+      rect(g, 70, 20, 14, 22, 4, 0xc9d2dc);
+      rect(g, 70, 42, 14, 36, 6, COLORS.sky, 2);
+      hands(g, 60, 94);
+      circle(g, 28, 70, 7, COLORS.white, 2);
+    },
+  },
+  'paso-secar': {
+    w: 120,
+    h: 120,
+    draw: (g) => {
+      rect(g, 14, 10, 92, 60, 10, COLORS.turquoise);
+      line(g, 14, 30, 106, 30, 4, COLORS.white);
+      line(g, 14, 44, 106, 44, 4, COLORS.white);
+      hands(g, 60, 94);
+    },
+  },
+  agua: {
+    w: 110,
+    h: 110,
+    draw: (g) => {
+      poly(g, [26, 14, 84, 14, 76, 100, 34, 100], COLORS.white);
+      poly(g, [31, 40, 79, 40, 76, 96, 34, 96], COLORS.sky, 0);
+      g.lineStyle(LW, INK).strokePoints(
+        [
+          { x: 26, y: 14 },
+          { x: 84, y: 14 },
+          { x: 76, y: 100 },
+          { x: 34, y: 100 },
+        ],
+        true,
+        true,
+      );
+      g.fillStyle(COLORS.white, 0.6).fillEllipse(46, 62, 8, 26);
+    },
+  },
+  cepillo: {
+    w: 120,
+    h: 120,
+    draw: (g) => {
+      rect(g, 8, 70, 74, 18, 9, COLORS.turquoise);
+      rect(g, 78, 62, 30, 26, 6, COLORS.white);
+      for (let x = 82; x < 106; x += 6) line(g, x, 62, x, 46, 4, 0x9fd9ff);
+      ellipse(g, 94, 40, 30, 16, COLORS.white, 3);
+      g.fillStyle(COLORS.coral).fillRect(84, 38, 20, 4);
+    },
+  },
+  despertador: {
+    w: 120,
+    h: 120,
+    draw: (g) => {
+      circle(g, 30, 26, 14, COLORS.sun);
+      circle(g, 90, 26, 14, COLORS.sun);
+      circle(g, 60, 66, 42, COLORS.coral);
+      circle(g, 60, 66, 32, COLORS.white, 3);
+      line(g, 60, 66, 60, 44, 5);
+      line(g, 60, 66, 76, 72, 5);
+      line(g, 36, 104, 30, 114, 5);
+      line(g, 84, 104, 90, 114, 5);
+    },
+  },
+  desayuno: {
+    w: 130,
+    h: 120,
+    draw: (g) => {
+      ellipse(g, 52, 54, 84, 30, 0xf2d3a8);
+      for (const [x, y] of [
+        [36, 50],
+        [50, 46],
+        [64, 52],
+        [44, 58],
+        [60, 58],
+      ] as const)
+        g.fillStyle(0xd9a072).fillCircle(x, y, 5);
+      poly(g, [10, 56, 94, 56, 80, 96, 24, 96], COLORS.sun);
+      line(g, 82, 40, 104, 18, 6, 0xc9d2dc);
+      rect(g, 100, 54, 24, 46, 6, COLORS.white);
+      g.fillStyle(COLORS.sky, 0.5).fillRect(103, 66, 18, 30);
+    },
+  },
+  'dormir-tarde': {
+    w: 120,
+    h: 120,
+    draw: (g) => {
+      rect(g, 6, 6, 108, 108, 18, 0x2b3a6b);
+      circle(g, 36, 34, 16, 0xfff3b0, 3);
+      circle(g, 44, 28, 14, 0x2b3a6b, 0);
+      star(g, 92, 24, 7, COLORS.white, 2);
+      star(g, 70, 16, 5, COLORS.white, 2);
+      circle(g, 74, 76, 28, COLORS.white);
+      line(g, 74, 76, 74, 56, 4);
+      line(g, 74, 76, 62, 70, 4);
+    },
+  },
+
+  // ---------------- Íconos de los nuevos derechos ----------------
+  'icon-familia': {
+    w: 100,
+    h: 100,
+    draw: (g) => {
+      rect(g, 8, 50, 28, 42, 10, COLORS.grape);
+      rect(g, 64, 50, 28, 42, 10, COLORS.turquoise);
+      rect(g, 38, 66, 24, 28, 9, COLORS.sun);
+      circle(g, 22, 34, 14, SKIN[2]);
+      circle(g, 78, 34, 14, SKIN[1]);
+      circle(g, 50, 52, 11, SKIN[3]);
+      g.fillStyle(COLORS.coral)
+        .fillCircle(50, 16, 6)
+        .fillCircle(58, 16, 6)
+        .fillTriangle(44, 18, 64, 18, 54, 30);
+    },
+  },
+  'icon-identidad': {
+    w: 100,
+    h: 100,
+    draw: (g) => {
+      rect(g, 6, 18, 88, 64, 10, COLORS.white);
+      rect(g, 6, 18, 88, 16, 6, COLORS.sea, 3);
+      circle(g, 30, 56, 13, SKIN[2], 3);
+      g.fillStyle(HAIR.black).fillEllipse(30, 48, 26, 12);
+      for (const y of [48, 60, 70]) line(g, 50, y, 84, y, 4, 0x9aa5b8);
+    },
+  },
+
+  // ---------------- Mar ----------------
+  velero: {
+    w: 110,
+    h: 110,
+    draw: (g) => {
+      line(g, 52, 14, 52, 78, 4);
+      poly(g, [56, 18, 56, 74, 96, 74], COLORS.white);
+      poly(g, [48, 26, 48, 74, 18, 74], COLORS.cream);
+      poly(g, [52, 10, 70, 16, 52, 22], COLORS.coral, 3);
+      poly(g, [10, 80, 100, 80, 88, 100, 22, 100], COLORS.coral);
+      line(g, 22, 90, 88, 90, 3, COLORS.white);
     },
   },
 } satisfies Record<string, ArtDef>;

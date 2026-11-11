@@ -41,8 +41,8 @@ export default class Level06Scene extends BaseLevel {
     super('Level06');
   }
 
-  override init(): void {
-    super.init();
+  override init(data?: unknown): void {
+    super.init(data);
     this.zones = new Map();
     this.items = [];
     this.ready = false;
@@ -51,7 +51,7 @@ export default class Level06Scene extends BaseLevel {
   protected override buildLevel(): void {
     this.c = this.contentOf('daynight');
     this.night = this.add
-      .rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x1b1f4a, 0)
+      .rectangle(-4000, -4000, GAME_WIDTH + 8000, GAME_HEIGHT + 8000, 0x1b1f4a, 0)
       .setOrigin(0)
       .setDepth(0.5);
     this.sun = artImage(this, 640, 200, 'sol').setDepth(1);
@@ -69,6 +69,7 @@ export default class Level06Scene extends BaseLevel {
         height: 130,
         zones: [],
         onDrop: (it, zone) => this.onDrop(it, zone, def),
+        placedScale: 0.85,
       });
       item.setDepth(3).setLocked(true).setAlpha(0.5);
       this.items.push(item);
@@ -88,12 +89,13 @@ export default class Level06Scene extends BaseLevel {
     // Se divide el cielo: día a la izquierda, noche a la derecha.
     // Borde derecho de noche (mismo tono que el cielo oscurecido).
     setPageBackground(
+      this,
       { top: COLORS.sky, bottom: COLORS.grass, split: 630 },
       { top: 0x33406a, bottom: 0x2c4f3a, split: 630 },
     );
     this.tweens.add({
       targets: this.night,
-      x: GAME_WIDTH / 2,
+      x: GAME_WIDTH / 2, // el borde izquierdo de la noche llega al centro
       duration: motion(900),
       ease: 'Cubic.easeInOut',
     });
@@ -164,7 +166,7 @@ export default class Level06Scene extends BaseLevel {
   }
 
   private onDrop(
-    item: DraggableItem,
+    _item: DraggableItem,
     zone: DropZone | null,
     def: DayNightContent['items'][number],
   ): DropDecision {
@@ -173,7 +175,6 @@ export default class Level06Scene extends BaseLevel {
       this.mistake(def.hint);
       return 'reject';
     }
-    this.tweens.add({ targets: item, scale: 0.85, duration: motion(200) });
     const last = this.items.filter((i) => i.isPlaced).length + 1 === this.items.length;
     this.correct(zone.x, zone.y - 60, last ? null : undefined);
     if (last) this.time.delayedCall(600, () => void this.complete(this.c.done));

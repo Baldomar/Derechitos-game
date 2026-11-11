@@ -10,7 +10,6 @@ import { SCENE_LOADERS, type LazySceneKey, type SceneKey } from './SceneRegistry
  * Todos los objetos y tweens pertenecen a la escena, así que Phaser los destruye al salir.
  */
 
-const RADIUS = Math.hypot(GAME_WIDTH, GAME_HEIGHT) / 2 + 24;
 let busy = false;
 
 /** Registra la escena en el juego si aún no existe (descarga su chunk). */
@@ -37,15 +36,19 @@ export function prefetchScene(key: LazySceneKey): void {
 /** Bloquea toques mientras dura la transición. */
 function addBlocker(scene: Phaser.Scene): Phaser.GameObjects.Zone {
   return scene.add
-    .zone(0, 0, GAME_WIDTH, GAME_HEIGHT)
-    .setOrigin(0)
+    .zone(GAME_WIDTH / 2, GAME_HEIGHT / 2, 8000, 8000)
     .setDepth(DEPTH.transition)
     .setInteractive();
 }
 
 function addBubble(scene: Phaser.Scene): Phaser.GameObjects.Arc {
   return scene.add
-    .circle(GAME_WIDTH / 2, GAME_HEIGHT / 2, RADIUS, COLORS.turquoise)
+    .circle(
+      GAME_WIDTH / 2,
+      GAME_HEIGHT / 2,
+      Math.hypot(scene.scale.width, scene.scale.height) / 2 + 24,
+      COLORS.turquoise,
+    )
     .setDepth(DEPTH.transition + 1);
 }
 

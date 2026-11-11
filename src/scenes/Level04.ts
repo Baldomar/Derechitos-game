@@ -10,6 +10,8 @@ import { motion } from '@/core/Device';
 import { BaseLevel } from './BaseLevel';
 
 const BOARD = { x: 860, y: 300, w: 480, h: 320 };
+/** Imagen completa del salón: al recortarlo en piezas Phaser cambiaría el cuadro predeterminado. */
+const FULL = '__BASE';
 
 /**
  * Nivel 4 — Rompecabezas escolar (educación).
@@ -30,8 +32,8 @@ export default class Level04Scene extends BaseLevel {
     super('Level04');
   }
 
-  override init(): void {
-    super.init();
+  override init(data?: unknown): void {
+    super.init(data);
     this.stage = 'puzzle';
     this.pieces = [];
     this.pieceZones = new Map();
@@ -76,7 +78,7 @@ export default class Level04Scene extends BaseLevel {
         BOARD.h + 28,
         18,
       );
-    const guide = this.add.image(BOARD.x, BOARD.y, tex('salon')).setAlpha(0.18);
+    const guide = this.add.image(BOARD.x, BOARD.y, tex('salon'), FULL).setAlpha(0.18);
     this.boardParts.push(frame, guide);
 
     // Cortar la textura en piezas (frames) una sola vez.
@@ -111,6 +113,8 @@ export default class Level04Scene extends BaseLevel {
         height: ph,
         zones: [own, ...others],
         onDrop: (it, zone) => this.onPieceDrop(it, zone),
+        placedScale: 1,
+        growOnDrag: true,
       });
       item.setScale(0.72).setDepth(3);
       this.pieces.push(item);
@@ -127,7 +131,6 @@ export default class Level04Scene extends BaseLevel {
       this.mistake(this.c.pieceHint);
       return 'reject';
     }
-    this.tweens.add({ targets: item, scale: 1, duration: motion(240) });
     this.time.delayedCall(10, () => item.setDepth(1));
     zone.setVisible(false);
     this.placed += 1;
@@ -151,7 +154,7 @@ export default class Level04Scene extends BaseLevel {
     frame
       .lineStyle(5, COLORS.ink)
       .strokeRoundedRect(-BOARD.w / 2 - 14, -BOARD.h / 2 - 14, BOARD.w + 28, BOARD.h + 28, 18);
-    const pic = this.add.image(0, 0, tex('salon'));
+    const pic = this.add.image(0, 0, tex('salon'), FULL);
     // Detalles animados: el sol de la ventana brilla y la pizarra destella.
     const glow = this.add.circle(BOARD.w / 2 - 70, -BOARD.h / 2 + 60, 26, COLORS.sun, 0.6);
     board.add([frame, pic, glow]);
@@ -179,6 +182,8 @@ export default class Level04Scene extends BaseLevel {
       duration: motion(700),
       ease: 'Cubic.easeInOut',
     });
+    await this.wait(motion(750));
+    if (!this.alive) return;
     this.buildShadows();
     await this.instruct(this.c.alive);
   }

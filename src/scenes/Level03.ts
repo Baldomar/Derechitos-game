@@ -50,8 +50,8 @@ export default class Level03Scene extends BaseLevel {
     super('Level03');
   }
 
-  override init(): void {
-    super.init();
+  override init(data?: unknown): void {
+    super.init(data);
     this.step = 0;
     this.cards = [];
     this.dots = [];
@@ -63,7 +63,7 @@ export default class Level03Scene extends BaseLevel {
     this.c = this.contentOf('clinic');
     const g = this.add.graphics();
     g.fillStyle(0xbfe3dc).fillRect(0, 470, 1280, 250);
-    setPageBackground({ top: 0xd8f3ee, bottom: 0xbfe3dc, split: 470 });
+    setPageBackground(this, { top: 0xd8f3ee, bottom: 0xbfe3dc, split: 470 });
     g.fillStyle(COLORS.white).fillCircle(1150, 120, 44);
     g.lineStyle(5, COLORS.ink).strokeCircle(1150, 120, 44);
     g.fillStyle(COLORS.coral).fillRect(1140, 94, 20, 52).fillRect(1124, 110, 52, 20);

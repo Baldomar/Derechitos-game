@@ -3,7 +3,7 @@ import { CSS, GAME_HEIGHT, GAME_WIDTH } from '@/config/theme';
 import BootScene from '@/scenes/Boot';
 import PreloadScene from '@/scenes/Preload';
 import { AudioManager } from '@/core/AudioManager';
-import { initPageBackground } from '@/core/PageBackground';
+import { initViewport } from '@/core/Viewport';
 
 /**
  * Solo Boot y Preload van en el bundle inicial; el resto de escenas se descargan
@@ -16,7 +16,8 @@ const config: Phaser.Types.Core.GameConfig = {
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   scale: {
-    mode: Phaser.Scale.FIT,
+    // EXPAND: el lienzo llena toda la pantalla; el área 1280x720 queda centrada (core/Viewport).
+    mode: Phaser.Scale.EXPAND,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   input: { activePointers: 2 },
@@ -29,7 +30,7 @@ const config: Phaser.Types.Core.GameConfig = {
 
 AudioManager.init();
 const game = new Phaser.Game(config);
-initPageBackground(game);
+initViewport(game);
 
 // Solo en desarrollo: atajo para pruebas automáticas (no se incluye en el build de producción).
 if (import.meta.env.DEV) {

@@ -44,8 +44,8 @@ export default class Level05Scene extends BaseLevel {
     super('Level05');
   }
 
-  override init(): void {
-    super.init();
+  override init(data?: unknown): void {
+    super.init(data);
     this.stage = 'ramp';
     this.options = [];
     this.kids = new Map();
@@ -57,6 +57,7 @@ export default class Level05Scene extends BaseLevel {
     this.c = this.contentOf('park');
     // Afuera (izquierda) el camino está más abajo que el parque (derecha).
     setPageBackground(
+      this,
       { top: COLORS.sky, bottom: COLORS.sand, split: LOW },
       { top: COLORS.sky, bottom: COLORS.grass, split: HIGH },
     );
@@ -100,7 +101,7 @@ export default class Level05Scene extends BaseLevel {
     });
 
     // Opciones para el escalón.
-    const zone = new DropZone(this, RAMP.x, RAMP.y + 7, {
+    const zone = new DropZone(this, RAMP.x, RAMP.y, {
       id: 'escalon',
       width: 170,
       height: 110,
@@ -108,7 +109,8 @@ export default class Level05Scene extends BaseLevel {
     });
     this.tweens.add({ targets: zone, alpha: 0.45, duration: 650, yoyo: true, repeat: -1 });
     this.c.options.forEach((o, i) => {
-      const img = artImage(this, 0, -6, o.art);
+      // La rampa va centrada (sin desplazar) para que encaje exacto en el escalón.
+      const img = artImage(this, 0, o.id === 'rampa' ? 0 : -6, o.art);
       img.setScale(Math.min(0.8, 110 / img.height));
       const label = addBody(this, 0, 56, o.label, 22);
       const item = new DraggableItem(this, 200 + i * 175, 190, {
@@ -118,6 +120,9 @@ export default class Level05Scene extends BaseLevel {
         height: 130,
         zones: [zone],
         onDrop: (it, z) => this.onOptionDrop(it, z, o, label),
+        ...(o.id === 'rampa'
+          ? { placedScale: { x: 1, y: (LOW - HIGH) / 80 }, growOnDrag: true }
+          : {}),
       });
       item.setDepth(3);
       this.options.push(item);
@@ -142,10 +147,10 @@ export default class Level05Scene extends BaseLevel {
     }
     this.stage = 'invite';
     label.setVisible(false);
-    zone.destroy();
+    // Se quita después: el componente aún usa la zona para acomodar la rampa.
+    this.time.delayedCall(0, () => zone.destroy());
     // La rampa se acomoda justo en el escalón.
     // La imagen mide 80 px de alto (escala 0.8): se estira para cubrir el escalón de 90 px.
-    this.tweens.add({ targets: item, scaleY: (LOW - HIGH) / 80, duration: motion(250) });
     this.time.delayedCall(10, () => item.setDepth(1));
     this.correct(RAMP.x, RAMP.y - 80, null);
     this.options

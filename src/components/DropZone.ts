@@ -96,6 +96,7 @@ export class DropZone extends Phaser.GameObjects.Container {
 
   /** Pulso de alegría al recibir un objeto correcto. */
   pulse(): void {
+    if (!this.scene) return; // la zona ya fue retirada
     this.scene.tweens.add({
       targets: this,
       scale: 1.08,

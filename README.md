@@ -3,7 +3,7 @@
 Videojuego educativo web para niñas y niños de **5 a 7 años** que enseña **derechos humanos** mediante actividades lúdicas.
 Proyecto del Laboratorio I, Cómputo III, Universidad Gerardo Barrios (El Salvador).
 
-Tori, un **torogoz** (ave nacional de El Salvador), guía al jugador por la **Isla Derechitos**. Cada zona de la isla es un nivel con una mecánica distinta. No hace falta saber leer: todas las instrucciones tienen voz y un botón 🔊 para repetirlas.
+Tori, un **torogoz** (ave nacional de El Salvador), guía al jugador por la **Isla Derechitos**. En la isla hay una casita por cada derecho; dentro de cada una hay juegos, desafíos y una medalla. No hace falta saber leer: todas las instrucciones tienen voz y un botón 🔊 para repetirlas.
 
 - **Stack:** TypeScript (modo estricto) · Phaser 3 · Vite · vite-plugin-pwa · ESLint + Prettier
 - **Instalable (PWA)** y funciona **sin internet** después de la primera visita.
@@ -11,28 +11,62 @@ Tori, un **torogoz** (ave nacional de El Salvador), guía al jugador por la **Is
 
 ---
 
-## Niveles, derechos y mecánicas (para la presentación)
+## La Isla Derechitos (para la presentación)
 
-| # | Zona | Derecho(s) | Mecánica | Lo que aprende el niño |
-|---|------|-----------|----------|------------------------|
-| 1 | Casa segura | Vivienda y vida | Arrastrar paredes, techo, ventana y puerta a su silueta; cuando llueve, llevar a la familia adentro por la puerta. Sale el arcoíris. | Todos tienen derecho a un hogar seguro y a vivir protegidos. |
-| 2 | Lonchera nutritiva | Alimentación | Arrastrar alimentos nutritivos (mango, guineo, frijoles, leche, verduras) a la lonchera. Dulces, soda y papitas rebotan con una pista amable. | Comer rico y nutritivo todos los días. |
-| 3 | Clínica de Tori | Salud | Elegir en orden quién ayuda (doctora), qué usa (termómetro, curita) y qué protege (vacuna). El osito se recupera. | Recibir cuidados cuando enfermamos. |
-| 4 | Rompecabezas escolar | Educación | Rompecabezas de 6 piezas del salón de clases; el salón cobra vida y se relacionan útiles escolares con su sombra. | Ir a la escuela y aprender. |
-| 5 | Parque para todos | Igualdad y no discriminación | Poner una rampa para Sofía (silla de ruedas) y luego invitar a todos tocándolos. | "Cuando todos caben, todos ganamos." |
-| 6 | Día y noche | Jugar y descansar | El cielo pasa de día a noche y se divide; llevar pelota, papalote y trompo al sol, y cama, pijama y cuento a la luna. | Jugar y descansar nos ayudan a crecer. |
-| 7 | Mi voz cuenta | Expresar opiniones | Elegir una carita de cómo se siente (Tori responde con empatía) y votar por el nombre del perrito del parque. **No hay respuestas incorrectas.** | Decir lo que pensamos y sentimos. |
-| 8 | Memorama de derechos | Repaso de todos | Memoria con 8 parejas (ilustración ↔ ícono y nombre del derecho). Al terminar se arma la imagen de la isla. | Recordar los 8 derechos. |
+Al tocar **¡Jugar!** el niño llega a la **isla**, con una casita por derecho (ícono grande, color propio y nombre corto). Al tocar una casita, Tori dice una frase sencilla del derecho y se entra a su pantalla.
 
-Al completar todo se obtiene el **Diploma "Guardián de los Derechos"**, y el **Álbum** guarda las 8 estampas (al tocarlas, Tori repite el derecho aprendido).
+Cada derecho tiene: **explicación animada** (2–3 frases con voz), **Juegos**, **Desafíos** (se abren al completar los juegos; el desafío final se abre al completar los otros desafíos), **barra de progreso**, **estrellas** y **medalla**. La pantalla **Mis medallas** muestra lo ganado y, con al menos una medalla, el **Diploma "Guardián de los Derechos"**.
+
+| Derecho | Qué dice Tori | Juegos | Medalla |
+|---------|---------------|--------|---------|
+| **Salud** (principal, completo) | Tengo derecho a recibir atención médica y cuidados. | ¿Sano o no sano? · Lava tus manos · Visita al doctor · Clínica de Tori — **Desafíos:** Mi día saludable · Ayuda a tu amigo · Desafío final | Guardián de la Salud |
+| Educación | Todos los niños tienen derecho a aprender y asistir a la escuela. | Rompecabezas escolar · Útiles escolares · Memorama de derechos | Guardián del Saber |
+| Vida | Mi vida debe ser protegida y respetada. | Me cuidan y me protegen · *próximamente* | Guardián de la Vida |
+| Alimentación | Tengo derecho a recibir alimentos nutritivos. | Plato sano · Lonchera nutritiva · *próximamente* | Guardián de la Buena Comida |
+| Vivienda | Tengo derecho a vivir en un lugar seguro. | Casa segura · Mi hogar y mi familia · *próximamente* | Guardián del Hogar |
+| Igualdad y no discriminación | Todos los niños merecen respeto, sin importar sus diferencias. | Parque para todos · Todos merecemos respeto · *próximamente* | Guardián de la Igualdad |
+| Jugar y descansar | Tengo derecho a divertirme, descansar y disfrutar de mi infancia. | ¿Jugar o descansar? · Día y noche · *próximamente* | Guardián del Juego |
+| Expresar opiniones | Puedo expresar lo que siento y pienso, y ser escuchado. | Mi voz cuenta · *próximamente* | Guardián de Mi Voz |
+
+Los desafíos de los derechos distintos de Salud están marcados como *próximamente*, con la misma estructura para completarlos.
+
+### Mecánica de cada juego
+
+| Juego | Derecho | Mecánica |
+|-------|---------|----------|
+| ¿Sano o no sano? / Plato sano / ¿Jugar o descansar? | Salud / Alimentación / Jugar | Arrastrar cada cosa a su grupo (carita feliz o triste, sol o luna); lo incorrecto rebota con una pista. |
+| Lava tus manos / Mi día saludable | Salud | Ordenar pasos en sus números (mojar → jabón → frotar → enjuagar → secar). |
+| Visita al doctor / Útiles escolares / Mi hogar y mi familia | Salud / Educación / Vivienda | Memorama de 6 parejas. |
+| Ayuda a tu amigo / Desafío final / Me cuidan y me protegen / Todos merecemos respeto | Salud / Vida / Igualdad | Elegir la(s) respuesta(s) correcta(s) con imágenes. |
+| Clínica de Tori | Salud | Elegir en orden quién ayuda (doctora), qué usa (termómetro, curita) y qué protege (vacuna). El osito se recupera. |
+| Casa segura | Vivienda | Armar la casa (paredes, techo, ventana, puerta); cuando llueve, llevar a la familia adentro. Sale el arcoíris. |
+| Lonchera nutritiva | Alimentación | Llenar la lonchera con alimentos nutritivos; dulces, soda y papitas rebotan con una pista amable. |
+| Rompecabezas escolar | Educación | Rompecabezas de 6 piezas del salón; el salón cobra vida y se relacionan útiles con su sombra. |
+| Parque para todos | Igualdad | Poner una rampa para Sofía (silla de ruedas) e invitar a todos. "Cuando todos caben, todos ganamos." |
+| Día y noche | Jugar | El cielo pasa de día a noche; llevar cada objeto al sol (jugar) o a la luna (descansar). |
+| Mi voz cuenta | Expresar opiniones | Elegir cómo se siente y votar por el nombre del perrito. **No hay respuestas incorrectas.** |
+| Memorama de derechos | Educación | Memoria con 8 parejas de derechos; al final se arma la imagen de la isla. |
 
 ### Reglas pedagógicas aplicadas
 
-- **Error amable:** el objeto regresa con rebote, Tori inclina la cabeza y da una pista concreta en voz.
+- **Error amable:** el objeto regresa con rebote, Tori inclina la cabeza y da una pista concreta en voz ("¡Inténtalo otra vez!").
 - **Acierto:** sonido alegre, destellos, palomita ✓ (forma e ícono, no solo color), vibración suave y un elogio variado.
-- **Estrellas:** 3 sin errores, 2 con 1–2 errores, 1 con más. Las estrellas nunca bajan al repetir un nivel.
+- **Estrellas:** 3 sin errores, 2 con 1–2 errores, 1 con más. Las estrellas nunca bajan al repetir un juego.
 - **Ayuda automática:** tras 8 s sin interacción aparece una manita que muestra qué tocar o arrastrar, y Tori repite la instrucción.
-- **Desbloqueo secuencial** de niveles en el mapa.
+
+### Cómo completar un derecho "próximamente"
+
+Todo está en [src/config/rights.ts](src/config/rights.ts). Hay 4 motores de minijuegos reutilizables; solo se escriben datos:
+
+| `kind` | Motor | Qué se define |
+|--------|-------|---------------|
+| `sort` | Clasificar (arrastrar a su grupo) | `bins` (grupos con dibujo) e `items` (cada cosa con su grupo y una pista) |
+| `sequence` | Ordenar pasos 1, 2, 3… | `steps` en el orden correcto, cada uno con su pista |
+| `memory` | Memorama de parejas | `items` (6 parejas recomendadas) |
+| `choice` | Elegir respuesta(s) | `rounds`: pregunta + opciones (`correct: true/false`, pista opcional) |
+| `level` | Juego con escena propia | `sceneKey` de una escena en `src/scenes/` (como `Level01`…`Level08`) |
+
+Reemplaza un `soon('id', 'Título', 'icono')` por una actividad con alguno de esos `kind`. Para que un desafío entregue la medalla del derecho, márcalo con `medal: true`. Los dibujos disponibles están en [src/art/Art.ts](src/art/Art.ts).
 
 ---
 
@@ -69,7 +103,7 @@ npm install
 
 Mantén presionado el **logo "Derechitos" durante 3 segundos** en la pantalla de título. Desde ahí se puede:
 
-- Desbloquear todos los niveles (útil para la presentación) o volver al desbloqueo secuencial.
+- Abrir todos los desafíos (útil para la presentación) o volver a que se abran al terminar los juegos.
 - Reiniciar el progreso (pide confirmación con un segundo toque).
 - Ajustar el **volumen de música, efectos y voz por separado**, o silenciar cada uno.
 - **Probar sonido** y ver un diagnóstico (si el audio está activo y qué voz en español se usa).
@@ -82,7 +116,7 @@ Mantén presionado el **logo "Derechitos" durante 3 segundos** en la pantalla de
 Por defecto Tori habla con la voz sintética del navegador en español (es-MX / es-US, tono un poco agudo).
 Para usar voces grabadas por el equipo:
 
-1. Abre **[docs/guion-de-voces.md](docs/guion-de-voces.md)**: tiene las 75 líneas con el nombre de archivo de cada una.
+1. Abre **[docs/guion-de-voces.md](docs/guion-de-voces.md)**: tiene las 170 líneas con el nombre de archivo de cada una.
 2. Graba cada línea y guárdala como `src/assets/audio/voice/<id>.mp3` (por ejemplo `level01_intro.mp3`). También se acepta `.ogg` o `.m4a`.
 3. Listo: Vite detecta los archivos solos al compilar. No hay que editar ninguna lista. Las líneas sin grabación siguen usando la voz sintética.
 
@@ -101,7 +135,9 @@ Para usar arte final: carga una imagen (PNG/WebP o un atlas) con la clave `art-<
 
 ---
 
-## Cómo agregar un nivel
+## Cómo agregar un juego con escena propia
+
+> Para la mayoría de los juegos basta con los 4 motores de datos (ver arriba). Esta sección es para juegos con mecánica nueva. Al final, agrégalo a su derecho en `rights.ts` con `level('id', 'Título', 'icono', 'LevelNN')`.
 
 Los niveles están definidos por datos en [src/config/levels.ts](src/config/levels.ts) (textos, objetos, respuestas, pistas y mensaje final).
 
@@ -186,7 +222,9 @@ src/
     HelperHand.ts          → manita de ayuda tras 8 s sin interacción
     Badges.ts              → medallas y estampas
   scenes/
-    Boot, Preload, Title, Intro, WorldMap, Level01..Level08, Reward, Album, Final, Teacher, Lab
+    Boot, Preload, Title, Intro, WorldMap (isla con las casitas), RightHub (pantalla de cada derecho),
+    SortGame, SequenceGame, MemoryGame, ChoiceGame (motores), Level01..Level08 (juegos con escena propia),
+    ActivityReward, Medals, Final (diploma), Teacher, Lab
   assets/audio/{voice,sfx,music}/  → audios opcionales (se detectan solos)
 public/icons/              → íconos de la PWA
 docs/guion-de-voces.md     → guion para grabar las voces

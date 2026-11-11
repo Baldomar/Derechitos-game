@@ -39,8 +39,8 @@ export default class Level07Scene extends BaseLevel {
     super('Level07');
   }
 
-  override init(): void {
-    super.init();
+  override init(data?: unknown): void {
+    super.init(data);
     this.stage = 'feel';
     this.faces = [];
     this.cards = [];

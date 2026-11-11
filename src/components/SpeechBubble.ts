@@ -11,6 +11,8 @@ export interface SpeechBubbleOptions {
   tail?: 'left' | 'right' | 'none';
   tori?: Tori;
   fontSize?: number;
+  /** Encabezado pequeño en mayúsculas (p. ej. "¡HOLA, EXPLORADOR!"). */
+  title?: string;
 }
 
 const PAD = 26;
@@ -24,6 +26,7 @@ const GAP = 16;
 export class SpeechBubble extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.Graphics;
   private readonly label: Phaser.GameObjects.Text;
+  private readonly heading: Phaser.GameObjects.Text | null;
   private readonly speaker: Phaser.GameObjects.Container;
   private readonly waves: Phaser.GameObjects.Graphics;
   private readonly bubbleWidth: number;
@@ -55,9 +58,23 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
       })
       .setOrigin(0, 0.5);
 
+    this.heading = opts.title
+      ? scene.add
+          .text(-this.bubbleWidth / 2 + PAD, 0, opts.title.toUpperCase(), {
+            fontFamily: FONTS.title,
+            fontSize: '18px',
+            fontStyle: '800',
+            color: '#13827D', // turquesa oscuro: contraste AA sobre blanco
+            resolution: TEXT_RESOLUTION,
+            padding: { top: 4 },
+          })
+          .setOrigin(0, 0.5)
+      : null;
+
     this.waves = scene.add.graphics();
     this.speaker = this.buildSpeaker(scene);
     this.add([this.bg, this.label, this.speaker]);
+    if (this.heading) this.add(this.heading);
     this.setDepth(DEPTH.ui + 10).setVisible(false);
     scene.add.existing(this);
 
@@ -106,7 +123,15 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
 
   private layout(): number {
     const w = this.bubbleWidth;
-    const h = Math.max(this.label.height + PAD * 2, BTN + 28);
+    const headH = this.heading ? this.heading.height - 2 : 0;
+    const content = headH + this.label.height;
+    const h = Math.max(content + PAD * 2 - (this.heading ? 8 : 0), BTN + 28);
+    if (this.heading) {
+      this.heading.setY(-content / 2 + headH / 2);
+      this.label.setY(-content / 2 + headH + this.label.height / 2);
+    } else {
+      this.label.setY(0);
+    }
     const g = this.bg;
     g.clear();
     g.fillStyle(COLORS.ink, 0.2).fillRoundedRect(-w / 2, -h / 2 + 8, w, h, 28);

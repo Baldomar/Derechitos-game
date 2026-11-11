@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { LEVELS, type LevelDef } from '@/config/levels';
+import { RIGHT_AREAS, isPlayable, type RightArea } from '@/config/rights';
 
 /**
  * Progreso del juego: estrellas, medallas, álbum y ajustes.
@@ -24,6 +25,8 @@ interface SaveData {
   version: 1;
   /** Mejor resultado por nivel (solo niveles completados). */
   stars: Record<string, Stars>;
+  /** Mejor resultado por actividad de los derechos: clave "derecho/actividad". */
+  activities: Record<string, Stars>;
   introSeen: boolean;
   finalSeen: boolean;
   /** Modo maestro: todos los niveles abiertos. */
@@ -56,10 +59,25 @@ const DEFAULT_SETTINGS: Settings = {
   voiceMuted: false,
 };
 
+const activityKey = (rightId: string, activityId: string): string => `${rightId}/${activityId}`;
+
+export interface ActivityResult {
+  rightId: string;
+  activityId: string;
+  stars: Stars;
+  previousBest: number;
+  firstTime: boolean;
+  /** Se acaba de ganar la medalla del derecho. */
+  medalEarned: boolean;
+  /** Se acaban de abrir los desafíos del derecho. */
+  challengesUnlocked: boolean;
+}
+
 function defaults(): SaveData {
   return {
     version: 1,
     stars: {},
+    activities: {},
     introSeen: false,
     finalSeen: false,
     unlockAll: false,
@@ -81,6 +99,15 @@ function sanitize(raw: unknown): SaveData {
     for (const level of LEVELS) {
       const s = (r.stars as Record<string, unknown>)[level.id];
       if (s === 1 || s === 2 || s === 3) data.stars[level.id] = s;
+    }
+  }
+  if (typeof r.activities === 'object' && r.activities !== null) {
+    for (const right of RIGHT_AREAS) {
+      for (const a of [...right.games, ...right.challenges]) {
+        const key = activityKey(right.id, a.id);
+        const s = (r.activities as Record<string, unknown>)[key];
+        if (s === 1 || s === 2 || s === 3) data.activities[key] = s;
+      }
     }
   }
   data.introSeen = r.introSeen === true;
@@ -193,6 +220,82 @@ class GameStateStore extends Phaser.Events.EventEmitter {
     if (this.data.finalSeen) return;
     this.data.finalSeen = true;
     this.save();
+  }
+
+  // ---------- Villa de los Derechos ----------
+
+  getActivityStars(rightId: string, activityId: string): number {
+    return this.data.activities[activityKey(rightId, activityId)] ?? 0;
+  }
+
+  /** Estrellas ganadas en un derecho y máximo posible (solo actividades disponibles). */
+  rightStars(right: RightArea): { stars: number; max: number } {
+    const all = [...right.games, ...right.challenges].filter(isPlayable);
+    return {
+      stars: all.reduce((sum, a) => sum + this.getActivityStars(right.id, a.id), 0),
+      max: all.length * 3,
+    };
+  }
+
+  /** Actividades completadas / disponibles de un derecho. */
+  rightProgress(right: RightArea): { done: number; total: number } {
+    const all = [...right.games, ...right.challenges].filter(isPlayable);
+    return {
+      done: all.filter((a) => this.getActivityStars(right.id, a.id) > 0).length,
+      total: all.length,
+    };
+  }
+
+  /** Los desafíos se abren al completar todos los juegos disponibles. */
+  gamesDone(right: RightArea): boolean {
+    const games = right.games.filter(isPlayable);
+    return games.length > 0 && games.every((g) => this.getActivityStars(right.id, g.id) > 0);
+  }
+
+  /** ¿Se puede jugar este desafío? (el final pide además los otros desafíos). */
+  challengeUnlocked(right: RightArea, challengeId: string): boolean {
+    if (this.data.unlockAll) return true;
+    if (!this.gamesDone(right)) return false;
+    const c = right.challenges.find((x) => x.id === challengeId);
+    if (!c || !isPlayable(c) || !c.medal) return true;
+    return right.challenges
+      .filter((x) => isPlayable(x) && x.id !== challengeId)
+      .every((x) => this.getActivityStars(right.id, x.id) > 0);
+  }
+
+  hasRightMedal(right: RightArea): boolean {
+    const final = right.challenges.find((c) => isPlayable(c) && c.medal);
+    return !!final && this.getActivityStars(right.id, final.id) > 0;
+  }
+
+  get rightMedalCount(): number {
+    return RIGHT_AREAS.filter((r) => this.hasRightMedal(r)).length;
+  }
+
+  get totalRightStars(): number {
+    return RIGHT_AREAS.reduce((sum, r) => sum + this.rightStars(r).stars, 0);
+  }
+
+  /** Registra el resultado de un juego o desafío. Las estrellas nunca bajan. */
+  completeActivity(rightId: string, activityId: string, errors: number): ActivityResult {
+    const right = RIGHT_AREAS.find((r) => r.id === rightId);
+    const hadMedal = right ? this.hasRightMedal(right) : false;
+    const hadGames = right ? this.gamesDone(right) : false;
+    const key = activityKey(rightId, activityId);
+    const stars = GameStateStore.starsFor(errors);
+    const previousBest = this.data.activities[key] ?? 0;
+    if (stars > previousBest) this.data.activities[key] = stars;
+    this.save();
+    const hasChallenges = right ? right.challenges.some(isPlayable) : false;
+    return {
+      rightId,
+      activityId,
+      stars,
+      previousBest,
+      firstTime: previousBest === 0,
+      medalEarned: !!right && !hadMedal && this.hasRightMedal(right),
+      challengesUnlocked: !!right && hasChallenges && !hadGames && this.gamesDone(right),
+    };
   }
 
   // ---------- Modo maestro ----------

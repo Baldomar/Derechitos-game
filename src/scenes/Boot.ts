@@ -10,6 +10,23 @@ export default class BootScene extends Phaser.Scene {
   create(): void {
     // Acceder al singleton fuerza la lectura del guardado una sola vez.
     void GameState.totalStars;
+    this.resetFromUrl();
     this.scene.start('Preload');
+  }
+
+  /**
+   * Atajo para pruebas y para la presentación: abrir el juego con "?reiniciar" al final
+   * de la dirección borra el progreso (conserva el volumen) y limpia la dirección.
+   */
+  private resetFromUrl(): void {
+    try {
+      const url = new URL(window.location.href);
+      if (!url.searchParams.has('reiniciar')) return;
+      GameState.resetProgress();
+      url.searchParams.delete('reiniciar');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    } catch {
+      // Navegador sin soporte de URL/history: se usa el modo maestro para reiniciar.
+    }
   }
 }

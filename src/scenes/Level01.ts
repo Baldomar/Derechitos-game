@@ -56,8 +56,8 @@ export default class Level01Scene extends BaseLevel {
     super('Level01');
   }
 
-  override init(): void {
-    super.init();
+  override init(data?: unknown): void {
+    super.init(data);
     this.stage = 'build';
     this.pieces = [];
     this.ghosts = [];
@@ -72,12 +72,11 @@ export default class Level01Scene extends BaseLevel {
     this.c = this.contentOf('house');
     const ground = this.add.graphics();
     ground.fillStyle(COLORS.grass).fillRect(0, 476, GAME_WIDTH, GAME_HEIGHT - 476);
-    setPageBackground({ top: COLORS.sky, bottom: COLORS.grass, split: 476 });
+    setPageBackground(this, { top: COLORS.sky, bottom: COLORS.grass, split: 476 });
     ground.fillStyle(COLORS.sand).fillRect(840, 476, 80, GAME_HEIGHT - 476);
 
     this.darkness = this.add
-      .rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x1b2340, 0)
-      .setOrigin(0)
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 8000, 8000, 0x1b2340, 0)
       .setDepth(0.5);
 
     // Siluetas (guía visual) y zonas destino.
@@ -116,6 +115,8 @@ export default class Level01Scene extends BaseLevel {
         height: img.height,
         zones: [own, ...others],
         onDrop: (it, zone) => this.onPieceDrop(it, zone, p.hint),
+        placedScale: 1,
+        growOnDrag: true,
       });
       item.setScale(pos.home.s).setDepth(4);
       this.pieces.push(item);
@@ -137,7 +138,6 @@ export default class Level01Scene extends BaseLevel {
       return 'reject';
     }
     const pos = HOUSE[item.itemId];
-    this.tweens.add({ targets: item, scale: 1, duration: motion(260), ease: 'Back.easeOut' });
     this.time.delayedCall(10, () => item.setDepth(pos?.depth ?? 1));
     this.placed += 1;
     const last = this.placed === this.c.pieces.length;
@@ -180,7 +180,7 @@ export default class Level01Scene extends BaseLevel {
     });
     this.rain = this.add
       .particles(0, -20, this.rainTexture(), {
-        x: { min: 0, max: GAME_WIDTH },
+        x: { min: -500, max: GAME_WIDTH + 500 },
         speedY: { min: 700, max: 900 },
         speedX: -60,
         lifespan: 900,
@@ -244,7 +244,7 @@ export default class Level01Scene extends BaseLevel {
     const last = this.sheltered === this.family.length;
     this.correct(DOOR.x, DOOR.y - 60, last ? null : undefined);
     if (last) {
-      zone.destroy();
+      this.time.delayedCall(0, () => zone.destroy());
       this.time.delayedCall(800, () => void this.stopRain());
     }
     return 'accept';

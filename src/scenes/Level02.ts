@@ -6,7 +6,6 @@ import { DraggableItem, type DropDecision } from '@/components/DraggableItem';
 import { DropZone } from '@/components/DropZone';
 import type { HintTarget } from '@/components/HelperHand';
 import { addBody } from '@/components/Text';
-import { motion } from '@/core/Device';
 import { BaseLevel } from './BaseLevel';
 
 const BOX = { x: 1030, y: 360 };
@@ -37,8 +36,8 @@ export default class Level02Scene extends BaseLevel {
     super('Level02');
   }
 
-  override init(): void {
-    super.init();
+  override init(data?: unknown): void {
+    super.init(data);
     this.items = [];
     this.labels = new Map();
     this.filled = 0;
@@ -87,6 +86,7 @@ export default class Level02Scene extends BaseLevel {
         height: 140,
         zones: [zone],
         onDrop: (it, z) => this.onDrop(it, z, def),
+        placedScale: 0.62,
       });
       item.setDepth(2);
       this.items.push(item);
@@ -108,7 +108,6 @@ export default class Level02Scene extends BaseLevel {
       return 'reject';
     }
     this.filled += 1;
-    this.tweens.add({ targets: item, scale: 0.62, duration: motion(260) });
     // Dentro de la lonchera solo se ve el dibujo.
     this.labels.get(item.itemId)?.setVisible(false);
     const last = this.filled === this.goal;
