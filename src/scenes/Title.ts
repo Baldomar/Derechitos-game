@@ -7,7 +7,7 @@ import { IdleHint } from '@/components/HelperHand';
 import { addBody, addTitle } from '@/components/Text';
 import { Tori } from '@/components/Tori';
 import { AudioManager } from '@/core/AudioManager';
-import { motion, prefersReducedMotion } from '@/core/Device';
+import { enterImmersive, motion, prefersReducedMotion } from '@/core/Device';
 import { GameState } from '@/core/GameState';
 import { goTo } from '@/core/SceneTransition';
 
@@ -48,7 +48,11 @@ export default class TitleScene extends Phaser.Scene {
       fontSize: 58,
       color: COLORS.sun,
       pulse: true,
-      onClick: () => void goTo(this, GameState.introSeen ? 'WorldMap' : 'Intro'),
+      onClick: () => {
+        // En celulares: pantalla completa y horizontal (debe ocurrir dentro del toque).
+        enterImmersive(this.scale);
+        void goTo(this, GameState.introSeen ? 'WorldMap' : 'Intro');
+      },
     });
     new IdleHint(this, () => ({ kind: 'tap', x: play.x, y: play.y }));
 
