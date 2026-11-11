@@ -13,6 +13,8 @@ export interface BigButtonOptions {
   fontSize?: number;
   /** Late suavemente para llamar la atención (p. ej. "¡Jugar!"). */
   pulse?: boolean;
+  /** Ícono circular a la izquierda del texto (p. ej. "play" en "¡Jugar!"). */
+  icon?: 'play';
 }
 
 /**
@@ -66,7 +68,22 @@ export class BigButton extends Phaser.GameObjects.Container {
       })
       .setOrigin(0.5);
 
-    this.face = scene.add.container(0, 0, [bg, this.labelText]);
+    const parts: Phaser.GameObjects.GameObject[] = [bg, this.labelText];
+    if (opts.icon === 'play') {
+      const d = Math.round(h * 0.56);
+      const iconKey = bakedTexture(scene, `btn-icon-play-${d}`, d + 4, d + 4, (g) => {
+        const c = d / 2 + 2;
+        g.fillStyle(COLORS.ink).fillCircle(c, c, d / 2);
+        const t = d * 0.2;
+        g.fillStyle(COLORS.white).fillTriangle(c - t * 0.7, c - t, c - t * 0.7, c + t, c + t * 1.1, c);
+      });
+      const gap = 18;
+      const total = d + gap + this.labelText.width;
+      const icon = scene.add.image(-total / 2 + d / 2, 0, iconKey);
+      this.labelText.setX(-total / 2 + d + gap + this.labelText.width / 2);
+      parts.push(icon);
+    }
+    this.face = scene.add.container(0, 0, parts);
     this.add([shadow, this.face]);
     this.setSize(w, h);
     this.setInteractive({ useHandCursor: true });

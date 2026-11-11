@@ -5,13 +5,16 @@ Si un archivo no existe, el juego usa la voz sintética del navegador con el mis
 
 **Recomendaciones:** voz alegre y pausada, tono un poco agudo (Tori es un pajarito), MP3 mono a 64–96 kbps, sin silencios largos al inicio o al final.
 
-Total: 177 líneas.
+Total: 180 líneas.
 
 ## General
 
 | Archivo | Texto |
 | --- | --- |
 | `title_hello.mp3` | ¡Hola! Toca el botón amarillo para jugar. |
+| `title_intro.mp3` | ¡Hola! Soy Tori. ¿Me ayudas a descubrir tus derechos? |
+| `title_help.mp3` | Toca el botón amarillo para jugar. El botón de la bocina apaga o prende el sonido. |
+| `title_lock.mp3` | Ese candado es para tu maestra o maestro. |
 | `intro_01.mp3` | ¡Hola! Soy Tori, un torogoz de El Salvador. |
 | `intro_02.mp3` | Juntos vamos a conocer nuestros derechos jugando. ¡Será muy divertido! |
 | `intro_03.mp3` | En cada juego ganarás estrellas y medallas. ¿Me acompañas? |
