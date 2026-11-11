@@ -4,7 +4,7 @@ import { AudioManager } from '@/core/AudioManager';
 import { bakedTexture } from '@/core/Bake';
 import { motion } from '@/core/Device';
 
-export type PillIcon = 'home' | 'medal';
+export type PillIcon = 'home' | 'medal' | 'back';
 
 export interface PillButtonOptions {
   label: string;
@@ -19,6 +19,15 @@ const H = 60;
 
 function drawIcon(g: Phaser.GameObjects.Graphics, icon: PillIcon): void {
   const ink = COLORS.ink;
+  if (icon === 'back') {
+    g.lineStyle(5, ink);
+    g.beginPath();
+    g.moveTo(5, -10);
+    g.lineTo(-5, 0);
+    g.lineTo(5, 10);
+    g.strokePath();
+    return;
+  }
   if (icon === 'home') {
     g.lineStyle(4, ink);
     g.strokeTriangle(-13, -1, 0, -13, 13, -1);
