@@ -21,8 +21,8 @@ const CARD_Y = 320;
  */
 export default class Level03Scene extends BaseLevel {
   protected readonly art: readonly ArtKey[] = [
-    'osito-enfermo',
-    'osito-sano',
+    'nino-enfermo',
+    'nino-sano',
     'cama',
     'doctora',
     'cocinero',
@@ -69,7 +69,7 @@ export default class Level03Scene extends BaseLevel {
     g.fillStyle(COLORS.coral).fillRect(1140, 94, 20, 52).fillRect(1124, 110, 52, 20);
 
     artImage(this, BEAR.x, BEAR.y + 110, 'cama');
-    this.bear = artImage(this, BEAR.x - 20, BEAR.y + 10, 'osito-enfermo').setScale(0.85);
+    this.bear = artImage(this, BEAR.x - 20, BEAR.y + 10, 'nino-enfermo').setScale(0.85);
     this.tweens.add({
       targets: this.bear,
       angle: { from: -2, to: 2 },
@@ -170,7 +170,7 @@ export default class Level03Scene extends BaseLevel {
     this.cards.forEach((c) => c.destroy());
     this.cards = [];
     this.tweens.killTweensOf(this.bear);
-    this.bear.setAngle(0).setTexture(tex('osito-sano'));
+    this.bear.setAngle(0).setTexture(tex('nino-sano'));
     this.tweens.add({
       targets: this.bear,
       scale: { from: 0.6, to: 0.85 },

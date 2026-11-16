@@ -38,7 +38,7 @@ Los desafíos de los derechos distintos de Salud están marcados como *próximam
 | Lava tus manos / Mi día saludable | Salud | Ordenar pasos en sus números (mojar → jabón → frotar → enjuagar → secar). |
 | Visita al doctor / Útiles escolares / Mi hogar y mi familia | Salud / Educación / Vivienda | Memorama de 6 parejas. |
 | Ayuda a tu amigo / Desafío final / Me cuidan y me protegen / Todos merecemos respeto | Salud / Vida / Igualdad | Elegir la(s) respuesta(s) correcta(s) con imágenes. |
-| Clínica de Tori | Salud | Elegir en orden quién ayuda (doctora), qué usa (termómetro, curita) y qué protege (vacuna). El osito se recupera. |
+| Clínica de Tori | Salud | Elegir en orden quién ayuda (doctora), qué usa (termómetro, curita) y qué protege (vacuna). Mateo, el amigo de Tori, se recupera. |
 | Casa segura | Vivienda | Armar la casa (paredes, techo, ventana, puerta); cuando llueve, llevar a la familia adentro. Sale el arcoíris. |
 | Lonchera nutritiva | Alimentación | Llenar la lonchera con alimentos nutritivos; dulces, soda y papitas rebotan con una pista amable. |
 | Rompecabezas escolar | Educación | Rompecabezas de 6 piezas del salón; el salón cobra vida y se relacionan útiles con su sombra. |

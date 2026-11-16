@@ -237,6 +237,45 @@ function person(g: G, w: number, h: number, o: PersonOpts): void {
 }
 
 /** Dos manos (palmas con dedos) para los pasos de lavado. */
+/** Mateo, el amigo de Tori, en la cama: enfermo (ojitos cansados, fiebre) o sano y feliz. */
+function kidPatient(g: G, healthy: boolean): void {
+  const skin = SKIN[2];
+  const hair = HAIR.black;
+  // Pijama con botones
+  // Pijama (cerrado abajo, para que se vea bien también fuera de la cama)
+  rect(g, 26, 148, 148, 58, 28, healthy ? COLORS.sun : 0xb7a6ff);
+  g.fillStyle(COLORS.white, 0.6).fillCircle(54, 176, 6).fillCircle(146, 174, 6).fillCircle(70, 196, 5).fillCircle(132, 196, 5);
+  rect(g, 86, 138, 28, 20, 6, skin, 3);
+  circle(g, 100, 172, 4, COLORS.white, 2);
+  circle(g, 100, 190, 4, COLORS.white, 2);
+  // Orejas, pelo y cara
+  circle(g, 44, 98, 13, skin, 3);
+  circle(g, 156, 98, 13, skin, 3);
+  circle(g, 100, 80, 60, hair);
+  circle(g, 100, 98, 54, skin);
+  g.fillStyle(hair);
+  g.fillEllipse(100, 52, 112, 40).fillCircle(64, 60, 18).fillCircle(136, 60, 18).fillCircle(100, 44, 22);
+  if (healthy) {
+    circle(g, 80, 96, 7, INK, 0);
+    circle(g, 120, 96, 7, INK, 0);
+    g.fillStyle(COLORS.white).fillCircle(82, 93, 2.5).fillCircle(122, 93, 2.5);
+    arc(g, 100, 112, 18, 0.15 * PI, 0.85 * PI, 4);
+    g.fillStyle(COLORS.coral, 0.5).fillCircle(66, 118, 10).fillCircle(134, 118, 10);
+    // Curita en la frente (del raspón que curamos)
+    rect(g, 106, 66, 30, 13, 5, 0xf2d3a8, 3);
+    g.fillStyle(0xe0b98a).fillRect(117, 69, 8, 7);
+  } else {
+    // Fiebre: frente roja, ojitos cansados, boca triste y una gotita de sudor.
+    g.fillStyle(COLORS.coral, 0.4).fillEllipse(100, 72, 84, 26);
+    arc(g, 80, 96, 9, 0.1 * PI, 0.9 * PI, 4);
+    arc(g, 120, 96, 9, 0.1 * PI, 0.9 * PI, 4);
+    arc(g, 100, 128, 12, 1.15 * PI, 1.85 * PI, 4);
+    g.fillStyle(COLORS.coral, 0.55).fillCircle(66, 116, 10).fillCircle(134, 116, 10);
+    g.fillStyle(0x7cc8f5).fillCircle(138, 84, 6).fillTriangle(133, 82, 143, 82, 138, 71);
+    g.lineStyle(2.5, INK).strokeCircle(138, 84, 6);
+  }
+}
+
 function hands(g: G, cx: number, cy: number): void {
   const skin = SKIN[2];
   for (const side of [-1, 1]) {
@@ -373,41 +412,15 @@ export const ART = {
   },
 
   // ---------------- Clínica (nivel 3) ----------------
-  'osito-enfermo': {
+  'nino-enfermo': {
     w: 200,
     h: 210,
-    draw: (g) => {
-      const fur = 0xb98a62;
-      circle(g, 52, 50, 24, fur);
-      circle(g, 148, 50, 24, fur);
-      ellipse(g, 100, 165, 140, 90, fur);
-      circle(g, 100, 92, 66, 0xc9a07c);
-      ellipse(g, 100, 112, 54, 40, 0xf0dcc4, 3);
-      circle(g, 100, 100, 9, INK, 0);
-      arc(g, 74, 84, 10, 0.1 * PI, 0.9 * PI, 4);
-      arc(g, 126, 84, 10, 0.1 * PI, 0.9 * PI, 4);
-      arc(g, 100, 130, 12, 1.15 * PI, 1.85 * PI, 4);
-      g.fillStyle(0x9fd9ff, 0.8).fillEllipse(68, 100, 10, 16);
-      g.fillStyle(COLORS.coral, 0.35).fillCircle(100, 70, 40);
-    },
+    draw: (g) => kidPatient(g, false),
   },
-  'osito-sano': {
+  'nino-sano': {
     w: 200,
     h: 210,
-    draw: (g) => {
-      const fur = 0xb98a62;
-      circle(g, 52, 50, 24, fur);
-      circle(g, 148, 50, 24, fur);
-      ellipse(g, 100, 165, 140, 90, fur);
-      circle(g, 100, 92, 66, 0xc9a07c);
-      ellipse(g, 100, 112, 54, 40, 0xf0dcc4, 3);
-      circle(g, 100, 100, 9, INK, 0);
-      circle(g, 74, 80, 7, INK, 0);
-      circle(g, 126, 80, 7, INK, 0);
-      arc(g, 100, 112, 16, 0.15 * PI, 0.85 * PI, 4);
-      g.fillStyle(COLORS.coral, 0.6).fillCircle(58, 106, 11).fillCircle(142, 106, 11);
-      rect(g, 132, 150, 30, 14, 5, 0xf2d3a8, 3);
-    },
+    draw: (g) => kidPatient(g, true),
   },
   cama: {
     w: 330,

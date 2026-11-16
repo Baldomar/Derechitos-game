@@ -2,7 +2,15 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="screen-orientation" content="landscape" />
+    <meta name="x5-orientation" content="landscape" />
+    <meta name="x5-fullscreen" content="true" />
+    <meta name="full-screen" content="yes" />
+    <meta name="browsermode" content="application" />
     <meta
       name="description"
       content="Derechitos: la aventura de Tori. Juego educativo sobre los derechos de la niñez."
@@ -16,7 +24,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=block"
       rel="stylesheet"
     />
     <title>Derechitos: la aventura de Tori</title>
@@ -119,9 +127,17 @@
           transform: rotate(-90deg);
         }
       }
-      /* Solo en pantallas táctiles pequeñas en vertical, y si no eligieron jugar así. */
-      @media (orientation: portrait) and (max-width: 900px) and (pointer: coarse) {
-        body:not(.vertical-ok) #rotate {
+      #rotate .ios {
+        font-weight: 600;
+        font-size: 15px;
+        opacity: 0.85;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      /* Cualquier celular o tablet en vertical: el juego siempre se juega en horizontal. */
+      @media (orientation: portrait) and (pointer: coarse) {
+        #rotate {
           display: flex;
         }
       }
@@ -164,25 +180,14 @@
         />
       </svg>
       <h2>¡Gira tu celular!</h2>
-      <p>Derechitos se juega mejor de lado, con el celular acostado.</p>
-      <button type="button" id="vertical-ok">Jugar en vertical</button>
+      <p>Derechitos se juega de lado, con el celular acostado.</p>
+      <button type="button" id="rotate-now" hidden>Girar pantalla</button>
+      <p class="ios" id="rotate-ios" hidden>
+        En iPhone: toca Compartir y luego «Agregar a inicio» para jugar en pantalla completa.
+      </p>
     </section>
 
     <noscript>Para jugar Derechitos necesitas activar JavaScript.</noscript>
-    <script>
-      // "Jugar en vertical": recuerda la elección durante la sesión.
-      try {
-        if (sessionStorage.getItem('derechitos.vertical') === '1')
-          document.body.classList.add('vertical-ok');
-      } catch (e) {}
-      document.getElementById('vertical-ok').addEventListener('click', function () {
-        document.body.classList.add('vertical-ok');
-        try {
-          sessionStorage.setItem('derechitos.vertical', '1');
-        } catch (e) {}
-        window.dispatchEvent(new Event('resize'));
-      });
-    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

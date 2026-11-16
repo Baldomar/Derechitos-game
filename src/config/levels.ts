@@ -341,9 +341,9 @@ export const LEVELS: readonly LevelDef[] = [
     icon: 'icon-salud',
     zone: { x: 300, y: 300, color: COLORS.turquoise },
     medal: { name: 'Medalla de la Salud', color: COLORS.turquoise },
-    sticker: { id: 'clinica', label: 'Osito sano' },
+    sticker: { id: 'clinica', label: 'Mateo sano' },
     dialog: {
-      intro: [v('level03_intro', 'Mi amigo osito está enfermo. ¿Me ayudas a cuidarlo?')],
+      intro: [v('level03_intro', 'Mi amigo Mateo está enfermo. ¿Me ayudas a cuidarlo?')],
       lesson: v(
         'level03_lesson',
         'Todas las niñas y niños tienen derecho a la salud y a que los cuiden cuando se enferman.',
@@ -353,7 +353,7 @@ export const LEVELS: readonly LevelDef[] = [
       kind: 'clinic',
       steps: [
         {
-          question: v('level03_q1', '¿Quién puede curar al osito? Toca a la persona.'),
+          question: v('level03_q1', '¿Quién puede curar a Mateo? Toca a la persona.'),
           success: v('level03_ok1', '¡Sí! La doctora cuida nuestra salud.'),
           options: [
             {
@@ -404,7 +404,7 @@ export const LEVELS: readonly LevelDef[] = [
           ],
         },
         {
-          question: v('level03_q3', 'El osito tiene un raspón. ¿Qué le ponemos?'),
+          question: v('level03_q3', 'Mateo tiene un raspón. ¿Qué le ponemos?'),
           success: v('level03_ok3', '¡Eso es! La curita protege el raspón.'),
           options: [
             { id: 'curita', art: 'curita', label: 'Curita', correct: true },
@@ -428,7 +428,7 @@ export const LEVELS: readonly LevelDef[] = [
           ],
         },
         {
-          question: v('level03_q4', '¿Qué protege al osito para que no se enferme?'),
+          question: v('level03_q4', '¿Qué protege a Mateo para que no se enferme?'),
           success: v('level03_ok4', '¡Correcto! Las vacunas nos protegen.'),
           options: [
             {
@@ -452,7 +452,7 @@ export const LEVELS: readonly LevelDef[] = [
           ],
         },
       ],
-      done: v('level03_done', '¡El osito ya está sano y feliz! Gracias por cuidarlo.'),
+      done: v('level03_done', '¡Mateo ya está sano y feliz! Gracias por cuidarlo.'),
     },
   },
   {

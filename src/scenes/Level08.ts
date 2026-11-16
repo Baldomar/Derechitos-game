@@ -3,8 +3,7 @@ import { COLORS } from '@/config/theme';
 import { RIGHTS, type MemoryContent, type RightId } from '@/config/levels';
 import { tex, type ArtKey } from '@/art/Art';
 import type { HintTarget } from '@/components/HelperHand';
-import { addStarIcon } from '@/components/Icons';
-import { addBody } from '@/components/Text';
+import { MemoryCard } from '@/components/MemoryCard';
 import { AudioManager } from '@/core/AudioManager';
 import { motion } from '@/core/Device';
 import { BaseLevel } from './BaseLevel';
@@ -34,18 +33,9 @@ const SHORT: Record<RightId, string> = {
   opinion: 'Opinar',
 };
 
-interface Card {
-  c: Phaser.GameObjects.Container;
-  back: Phaser.GameObjects.Container;
-  front: Phaser.GameObjects.Container;
-  right: RightId;
-  up: boolean;
-  matched: boolean;
-}
-
 /**
  * Nivel 8 — Memorama de derechos (repaso de todos).
- * 8 parejas: carta con la ilustración grande ↔ carta con el ícono y el nombre del derecho (mismo color).
+ * 8 parejas de cartas idénticas: ícono y nombre del derecho, con una franja de su color.
  * Al terminar, los íconos vuelan y se arma la imagen completa de la isla.
  */
 export default class Level08Scene extends BaseLevel {
@@ -63,8 +53,8 @@ export default class Level08Scene extends BaseLevel {
     'arbol',
   ];
   private c!: MemoryContent;
-  private cards: Card[] = [];
-  private first: Card | null = null;
+  private cards: MemoryCard[] = [];
+  private first: MemoryCard | null = null;
   private lock = false;
   private matched = 0;
   private mismatches = 0;
@@ -84,125 +74,70 @@ export default class Level08Scene extends BaseLevel {
 
   protected override buildLevel(): void {
     this.c = this.contentOf('memory');
-    const deck: { right: RightId; big: boolean }[] = [];
-    for (const p of this.c.pairs)
-      deck.push({ right: p.right, big: true }, { right: p.right, big: false });
-    Phaser.Utils.Array.Shuffle(deck);
+    const deck: RightId[] = Phaser.Utils.Array.Shuffle(
+      this.c.pairs.flatMap((p) => [p.right, p.right]),
+    );
     const cols = 8;
     const startX = 640 - (cols * CARD_W + (cols - 1) * GAP) / 2 + CARD_W / 2;
-    deck.forEach((d, i) => {
+    deck.forEach((right, i) => {
       const x = startX + (i % cols) * (CARD_W + GAP);
       const y = 205 + Math.floor(i / cols) * (CARD_H + 22);
-      this.cards.push(this.makeCard(x, y, d.right, d.big, i));
+      const card = new MemoryCard(this, x, y, right, {
+        w: CARD_W,
+        h: CARD_H,
+        art: RIGHTS[right].icon,
+        label: SHORT[right],
+        backColor: COLORS.turquoise,
+        accent: RIGHT_COLOR[right],
+        delay: i * 40,
+      });
+      card.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => void this.tap(card));
+      this.cards.push(card);
     });
-  }
-
-  private makeCard(x: number, y: number, right: RightId, big: boolean, i: number): Card {
-    const w = CARD_W;
-    const h = CARD_H;
-    const backG = this.add.graphics();
-    backG.fillStyle(COLORS.ink, 0.2).fillRoundedRect(-w / 2, -h / 2 + 7, w, h, 18);
-    backG.fillStyle(COLORS.turquoise).fillRoundedRect(-w / 2, -h / 2, w, h, 18);
-    backG.lineStyle(5, COLORS.ink).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
-    backG
-      .lineStyle(3, COLORS.white, 0.7)
-      .strokeRoundedRect(-w / 2 + 9, -h / 2 + 9, w - 18, h - 18, 12);
-    const back = this.add.container(0, 0, [backG, addStarIcon(this, 0, 0, 26, true)]);
-
-    const color = RIGHT_COLOR[right];
-    const frontG = this.add.graphics();
-    frontG.fillStyle(COLORS.white).fillRoundedRect(-w / 2, -h / 2, w, h, 18);
-    frontG
-      .fillStyle(color)
-      .fillRoundedRect(-w / 2, -h / 2, w, 26, { tl: 18, tr: 18, bl: 0, br: 0 });
-    frontG
-      .fillStyle(color)
-      .fillRoundedRect(-w / 2, h / 2 - 16, w, 16, { tl: 0, tr: 0, bl: 18, br: 18 });
-    frontG.lineStyle(5, COLORS.ink).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
-    const parts: Phaser.GameObjects.GameObject[] = [frontG];
-    const icon = RIGHTS[right].icon;
-    if (big) {
-      parts.push(this.add.image(0, 6, tex(icon)).setScale(1));
-    } else {
-      parts.push(this.add.image(0, -8, tex(icon)).setScale(0.6));
-      parts.push(addBody(this, 0, 44, SHORT[right], 19));
-    }
-    const front = this.add.container(0, 0, parts).setVisible(false);
-
-    const c = this.add.container(x, y, [back, front]).setSize(w, h);
-    const card: Card = { c, back, front, right, up: false, matched: false };
-    c.setInteractive({ useHandCursor: true });
-    c.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.tap(card));
-    c.setScale(0);
-    this.tweens.add({
-      targets: c,
-      scale: 1,
-      delay: i * 40,
-      duration: motion(300),
-      ease: 'Back.easeOut',
-    });
-    return card;
   }
 
   protected override onIntroDone(): void {
     this.enableIdleHint();
   }
 
-  private flip(card: Card, up: boolean): void {
-    card.up = up;
-    this.tweens.chain({
-      targets: card.c,
-      tweens: [
-        {
-          scaleX: 0,
-          duration: motion(110),
-          onComplete: () => {
-            card.front.setVisible(up);
-            card.back.setVisible(!up);
-          },
-        },
-        { scaleX: 1, duration: motion(110) },
-      ],
-    });
-  }
-
-  private tap(card: Card): void {
+  private async tap(card: MemoryCard): Promise<void> {
     if (this.lock || card.up || card.matched) return;
     AudioManager.sfx('pop', { pitch: 1.2 });
-    this.flip(card, true);
     if (!this.first) {
       this.first = card;
+      void card.flip(true);
       return;
     }
     const a = this.first;
     this.first = null;
     this.lock = true;
-    if (a.right === card.right) {
+    await card.flip(true);
+    if (!this.alive) return;
+
+    if (a.id === card.id) {
       a.matched = true;
       card.matched = true;
       this.matched += 1;
-      const pair = this.c.pairs.find((p) => p.right === card.right);
-      this.time.delayedCall(260, () => {
-        [a, card].forEach((k) =>
-          this.tweens.add({ targets: k.c, scale: 1.12, duration: motion(150), yoyo: true }),
-        );
-        const last = this.matched === this.c.pairs.length;
-        this.correct(
-          (a.c.x + card.c.x) / 2,
-          Math.min(a.c.y, card.c.y) - 60,
-          last ? null : (pair?.matched ?? null),
-        );
-        this.lock = false;
-        if (last) this.time.delayedCall(700, () => void this.buildIsland());
-      });
+      const pair = this.c.pairs.find((p) => p.right === card.id);
+      a.celebrate();
+      card.celebrate();
+      const last = this.matched === this.c.pairs.length;
+      this.correct(
+        (a.x + card.x) / 2,
+        Math.min(a.y, card.y) - 60,
+        last ? null : (pair?.matched ?? null),
+      );
+      this.lock = false;
+      if (last) this.time.delayedCall(700, () => void this.buildIsland());
       return;
     }
     this.mismatches += 1;
     if (this.mismatches % 3 === 0) void this.say(this.c.tryAgain);
-    this.time.delayedCall(950, () => {
-      this.flip(a, false);
-      this.flip(card, false);
-      this.lock = false;
+    this.time.delayedCall(800, () => {
+      // Se desbloquea hasta que las dos cartas terminan de voltearse.
+      void Promise.all([a.flip(false), card.flip(false)]).then(() => {
+        this.lock = false;
+      });
     });
   }
 
@@ -213,14 +148,16 @@ export default class Level08Scene extends BaseLevel {
 
     const origins = new Map<RightId, { x: number; y: number }>();
     this.cards.forEach((k, i) => {
-      if (!origins.has(k.right)) origins.set(k.right, { x: k.c.x, y: k.c.y });
+      const r = k.id as RightId;
+      if (!origins.has(r)) origins.set(r, { x: k.x, y: k.y });
+      this.tweens.killTweensOf(k);
       this.tweens.add({
-        targets: k.c,
+        targets: k,
         scale: 0,
         alpha: 0,
         delay: i * 25,
         duration: motion(250),
-        onComplete: () => k.c.destroy(),
+        onComplete: () => k.destroy(),
       });
     });
     await this.wait(600);
@@ -269,10 +206,10 @@ export default class Level08Scene extends BaseLevel {
     if (this.lock) return null;
     if (this.first) {
       const first = this.first;
-      const pair = this.cards.find((k) => k !== first && k.right === first.right && !k.matched);
-      return pair ? { kind: 'tap', x: pair.c.x, y: pair.c.y } : null;
+      const pair = this.cards.find((k) => k !== first && k.id === first.id && !k.matched);
+      return pair ? { kind: 'tap', x: pair.x, y: pair.y } : null;
     }
     const next = this.cards.find((k) => !k.matched && !k.up);
-    return next ? { kind: 'tap', x: next.c.x, y: next.c.y } : null;
+    return next ? { kind: 'tap', x: next.x, y: next.y } : null;
   }
 }

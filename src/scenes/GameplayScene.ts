@@ -1,15 +1,16 @@
 import Phaser from 'phaser';
-import { COLORS, CSS, DEPTH, GAME_WIDTH } from '@/config/theme';
+import { CSS, DEPTH, GAME_WIDTH } from '@/config/theme';
 import type { VoiceLine } from '@/config/levels';
 import { pickPraise } from '@/config/phrases';
 import { ensureArt, type ArtKey } from '@/art/Art';
 import { addBackdrop, type BackdropOptions } from '@/components/Backdrop';
-import { BigButton } from '@/components/BigButton';
+import { PillButton } from '@/components/PillButton';
 import { Effects } from '@/components/Effects';
 import { IdleHint, type HintTarget } from '@/components/HelperHand';
 import { SpeechBubble } from '@/components/SpeechBubble';
 import { addTitle } from '@/components/Text';
 import { Tori } from '@/components/Tori';
+import { addToriGuide } from '@/components/ToriGuide';
 import { AudioManager } from '@/core/AudioManager';
 import { vibrate } from '@/core/Device';
 
@@ -34,7 +35,6 @@ export abstract class GameplayScene extends Phaser.Scene {
   /** Dibujos que usa la escena (se generan al entrar: "atlas por escena"). */
   protected abstract readonly art: readonly ArtKey[];
   protected backdrop: BackdropOptions = {};
-  protected toriPos = { x: 115, y: 600, scale: 0.5 };
 
   /** Título que se muestra arriba. */
   protected abstract headerTitle(): string;
@@ -64,26 +64,19 @@ export abstract class GameplayScene extends Phaser.Scene {
     }).setDepth(DEPTH.ui);
 
     const back = this.backButton();
-    new BigButton(this, 90, 56, {
+    new PillButton(this, 104, 58, {
       label: back.label,
-      width: 150,
-      height: 88,
-      fontSize: 34,
-      color: COLORS.white,
+      icon: 'back',
+      width: 156,
       onClick: back.go,
     }).setDepth(DEPTH.ui);
 
     this.onCreateExtra();
 
     this.effects = new Effects(this);
-    const p = this.toriPos;
-    this.tori = new Tori(this, p.x, p.y, p.scale);
-    this.tori.setDepth(DEPTH.ui + 5);
-    this.bubble = new SpeechBubble(this, p.x + 445, 612, {
-      width: 620,
-      tail: 'left',
-      tori: this.tori,
-    });
+    const guide = addToriGuide(this);
+    this.tori = guide.tori;
+    this.bubble = guide.bubble;
 
     this.buildLevel();
     const intro = this.introLines();

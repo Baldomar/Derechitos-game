@@ -13,6 +13,8 @@ export interface SpeechBubbleOptions {
   fontSize?: number;
   /** Encabezado pequeño en mayúsculas (p. ej. "¡HOLA, EXPLORADOR!"). */
   title?: string;
+  /** Globo más bajito con un botón 🔊 pequeño (su área táctil sigue siendo de 88 px). */
+  compact?: boolean;
 }
 
 const PAD = 26;
@@ -32,6 +34,12 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
   private readonly bubbleWidth: number;
   private readonly tailSide: 'left' | 'right' | 'none';
   private readonly tori: Tori | null;
+  /** Medidas según el tamaño del globo (normal o compacto). */
+  private readonly pad: number;
+  private readonly btn: number;
+  private readonly radius: number;
+  private readonly compact: boolean;
+  private readonly baseY: number;
   private lines: VoiceLine[] = [];
   private token = 0;
   private alive = true;
@@ -42,11 +50,16 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
     this.bubbleWidth = opts.width ?? 600;
     this.tailSide = opts.tail ?? 'left';
     this.tori = opts.tori ?? null;
+    this.pad = opts.compact ? 22 : PAD;
+    this.btn = opts.compact ? 56 : BTN;
+    this.radius = opts.compact ? 22 : 28;
+    this.compact = opts.compact ?? false;
+    this.baseY = y;
 
     this.bg = scene.add.graphics();
     const size = opts.fontSize ?? 30;
     this.label = scene.add
-      .text(-this.bubbleWidth / 2 + PAD, 0, '', {
+      .text(-this.bubbleWidth / 2 + this.pad, 0, '', {
         fontFamily: FONTS.body,
         fontSize: `${size}px`,
         fontStyle: '800',
@@ -54,13 +67,16 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
         lineSpacing: 2,
         resolution: TEXT_RESOLUTION,
         padding: { top: 4, bottom: 2 },
-        wordWrap: { width: this.bubbleWidth - PAD * 2 - BTN - GAP, useAdvancedWrap: true },
+        wordWrap: {
+          width: this.bubbleWidth - this.pad * 2 - this.btn - GAP,
+          useAdvancedWrap: true,
+        },
       })
       .setOrigin(0, 0.5);
 
     this.heading = opts.title
       ? scene.add
-          .text(-this.bubbleWidth / 2 + PAD, 0, opts.title.toUpperCase(), {
+          .text(-this.bubbleWidth / 2 + this.pad, 0, opts.title.toUpperCase(), {
             fontFamily: FONTS.title,
             fontSize: '18px',
             fontStyle: '800',
@@ -102,17 +118,26 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
     this.waves.beginPath().arc(4, 0, 11, -0.9, 0.9).strokePath();
     this.waves.beginPath().arc(4, 0, 21, -0.9, 0.9).strokePath();
 
-    const c = scene.add.container(this.bubbleWidth / 2 - PAD - r + 6, 0, [
-      circle,
-      icon,
-      this.waves,
-    ]);
-    circle.setInteractive({ useHandCursor: true });
+    const k = this.btn / BTN;
+    const c = scene.add
+      .container(this.bubbleWidth / 2 - this.pad - this.btn / 2 + 6 * k, 0, [
+        circle,
+        icon,
+        this.waves,
+      ])
+      .setScale(k);
+    // El área táctil siempre mide al menos 88 px de diámetro, aunque el botón se vea pequeño.
+    const hitR = Math.max(r, 44 / k);
+    circle.setInteractive({
+      hitArea: new Phaser.Geom.Circle(r, r, hitR),
+      hitAreaCallback: Phaser.Geom.Circle.Contains,
+      useHandCursor: true,
+    });
     circle.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
       AudioManager.sfx('pop');
       scene.tweens.add({
         targets: c,
-        scale: { from: 0.82, to: 1 },
+        scale: { from: 0.82 * k, to: k },
         duration: motion(380),
         ease: 'Elastic.easeOut',
       });
@@ -125,7 +150,9 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
     const w = this.bubbleWidth;
     const headH = this.heading ? this.heading.height - 2 : 0;
     const content = headH + this.label.height;
-    const h = Math.max(content + PAD * 2 - (this.heading ? 8 : 0), BTN + 28);
+    const h = Math.max(content + this.pad * 2 - (this.heading ? 8 : 0), this.btn + 26);
+    const rr = this.radius;
+    if (this.compact) this.setY(this.baseY - (h - (this.btn + 26)) / 2);
     if (this.heading) {
       this.heading.setY(-content / 2 + headH / 2);
       this.label.setY(-content / 2 + headH + this.label.height / 2);
@@ -134,9 +161,9 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
     }
     const g = this.bg;
     g.clear();
-    g.fillStyle(COLORS.ink, 0.2).fillRoundedRect(-w / 2, -h / 2 + 8, w, h, 28);
-    g.fillStyle(COLORS.white).fillRoundedRect(-w / 2, -h / 2, w, h, 28);
-    g.lineStyle(5, COLORS.ink).strokeRoundedRect(-w / 2, -h / 2, w, h, 28);
+    g.fillStyle(COLORS.ink, 0.2).fillRoundedRect(-w / 2, -h / 2 + 8, w, h, rr);
+    g.fillStyle(COLORS.white).fillRoundedRect(-w / 2, -h / 2, w, h, rr);
+    g.lineStyle(5, COLORS.ink).strokeRoundedRect(-w / 2, -h / 2, w, h, rr);
 
     if (this.tailSide !== 'none') {
       const s = this.tailSide === 'left' ? -1 : 1;

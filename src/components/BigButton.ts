@@ -14,7 +14,9 @@ export interface BigButtonOptions {
   /** Late suavemente para llamar la atención (p. ej. "¡Jugar!"). */
   pulse?: boolean;
   /** Ícono circular a la izquierda del texto (p. ej. "play" en "¡Jugar!"). */
-  icon?: 'play';
+  icon?: 'play' | 'medal' | 'diploma';
+  /** Color del texto (por defecto, tinta). */
+  textColor?: string;
 }
 
 /**
@@ -62,21 +64,63 @@ export class BigButton extends Phaser.GameObjects.Container {
         fontFamily: FONTS.title,
         fontSize: `${opts.fontSize ?? 44}px`,
         fontStyle: '800',
-        color: CSS.ink,
+        color: opts.textColor ?? CSS.ink,
         resolution: TEXT_RESOLUTION,
         padding: { top: 8 },
       })
       .setOrigin(0.5);
 
     const parts: Phaser.GameObjects.GameObject[] = [bg, this.labelText];
-    if (opts.icon === 'play') {
+    if (opts.icon) {
       const d = Math.round(h * 0.56);
-      const iconKey = bakedTexture(scene, `btn-icon-play-${d}`, d + 4, d + 4, (g) => {
-        const c = d / 2 + 2;
-        g.fillStyle(COLORS.ink).fillCircle(c, c, d / 2);
-        const t = d * 0.2;
-        g.fillStyle(COLORS.white).fillTriangle(c - t * 0.7, c - t, c - t * 0.7, c + t, c + t * 1.1, c);
-      });
+      const iconKey =
+        opts.icon === 'play'
+          ? bakedTexture(scene, `btn-icon-play-${d}`, d + 4, d + 4, (g) => {
+              const c = d / 2 + 2;
+              g.fillStyle(COLORS.ink).fillCircle(c, c, d / 2);
+              const t = d * 0.2;
+              g.fillStyle(COLORS.white).fillTriangle(
+                c - t * 0.7,
+                c - t,
+                c - t * 0.7,
+                c + t,
+                c + t * 1.1,
+                c,
+              );
+            })
+          : opts.icon === 'medal'
+          ? bakedTexture(scene, `btn-icon-medal-${d}`, d + 4, d + 4, (g) => {
+              const c = d / 2 + 2;
+              const r = d * 0.3;
+              g.fillStyle(COLORS.coral).fillTriangle(c - r, 2, c - r * 0.1, 2, c - r * 0.3, c);
+              g.fillStyle(COLORS.turquoise).fillTriangle(c + r * 0.1, 2, c + r, 2, c + r * 0.3, c);
+              g.lineStyle(3, COLORS.ink);
+              g.strokeTriangle(c - r, 2, c - r * 0.1, 2, c - r * 0.3, c);
+              g.strokeTriangle(c + r * 0.1, 2, c + r, 2, c + r * 0.3, c);
+              const cy = d + 2 - r - 3;
+              g.fillStyle(COLORS.sun).fillCircle(c, cy, r);
+              g.lineStyle(4, COLORS.ink).strokeCircle(c, cy, r);
+              g.fillStyle(COLORS.white, 0.8).fillCircle(c, cy, r * 0.42);
+            })
+          : bakedTexture(scene, `btn-icon-diploma-${d}`, d + 4, d + 4, (g) => {
+              // Diploma enrollado: hoja con renglones, rollos a los lados y sello rojo.
+              const w = d * 0.86;
+              const x0 = (d + 4 - w) / 2;
+              const y0 = d * 0.18;
+              const hh = d * 0.64;
+              g.fillStyle(COLORS.cream).fillRect(x0, y0, w, hh);
+              g.lineStyle(3.5, COLORS.ink).strokeRect(x0, y0, w, hh);
+              for (const rx of [x0, x0 + w]) {
+                g.fillStyle(0xf2dfb0).fillRoundedRect(rx - 5, y0 - 4, 10, hh + 8, 5);
+                g.lineStyle(3, COLORS.ink).strokeRoundedRect(rx - 5, y0 - 4, 10, hh + 8, 5);
+              }
+              g.lineStyle(2.5, COLORS.ink, 0.6);
+              for (let k = 1; k <= 3; k++) {
+                g.lineBetween(x0 + 9, y0 + (hh * k) / 4.6, x0 + w - 12, y0 + (hh * k) / 4.6);
+              }
+              g.fillStyle(COLORS.coral).fillCircle(x0 + w - 13, y0 + hh - 9, 7);
+              g.lineStyle(2.5, COLORS.ink).strokeCircle(x0 + w - 13, y0 + hh - 9, 7);
+            });
       const gap = 18;
       const total = d + gap + this.labelText.width;
       const icon = scene.add.image(-total / 2 + d / 2, 0, iconKey);

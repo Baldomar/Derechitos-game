@@ -19,6 +19,7 @@ import { PillButton } from '@/components/PillButton';
 import { SpeechBubble } from '@/components/SpeechBubble';
 import { addBody, addTitle } from '@/components/Text';
 import { Tori } from '@/components/Tori';
+import { addToriGuide } from '@/components/ToriGuide';
 import { AudioManager } from '@/core/AudioManager';
 import { bakedTexture } from '@/core/Bake';
 import { motion, prefersReducedMotion } from '@/core/Device';
@@ -137,13 +138,7 @@ export default class RightHubScene extends Phaser.Scene {
     this.addGames();
     this.addChallenges();
 
-    this.tori = new Tori(this, 105, 640, 0.44);
-    this.bubble = new SpeechBubble(this, 640, 652, {
-      width: 900,
-      tail: 'left',
-      tori: this.tori,
-      fontSize: 24,
-    });
+    ({ tori: this.tori, bubble: this.bubble } = addToriGuide(this));
     const status = this.statusLine();
     const lines: VoiceLine[] = explained.has(r.id) ? [status] : [...r.explanation, status];
     explained.add(r.id);

@@ -13,18 +13,6 @@ export const TITLE_HELLO: VoiceLine = {
   text: '¡Hola! Soy Tori. ¿Me ayudas a descubrir tus derechos?',
 };
 
-/** Botón "?" de la portada. */
-export const TITLE_HELP: VoiceLine = {
-  id: 'title_help',
-  text: 'Toca el botón amarillo para jugar. El botón de la bocina apaga o prende el sonido.',
-};
-
-/** Candado de la portada (es solo para maestros). */
-export const TITLE_LOCK: VoiceLine = {
-  id: 'title_lock',
-  text: 'Ese candado es para tu maestra o maestro.',
-};
-
 export const INTRO_LINES: VoiceLine[] = [
   { id: 'intro_01', text: '¡Hola! Soy Tori, un torogoz de El Salvador.' },
   {

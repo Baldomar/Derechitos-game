@@ -13,6 +13,8 @@ export interface PillButtonOptions {
   color?: number;
   width?: number;
   fontSize?: number;
+  /** Color del texto (por defecto, tinta). */
+  textColor?: string;
 }
 
 const H = 60;
@@ -66,7 +68,7 @@ export class PillButton extends Phaser.GameObjects.Container {
         fontFamily: FONTS.title,
         fontSize: `${opts.fontSize ?? 26}px`,
         fontStyle: '800',
-        color: CSS.ink,
+        color: opts.textColor ?? CSS.ink,
         resolution: TEXT_RESOLUTION,
         padding: { top: 6 },
       })

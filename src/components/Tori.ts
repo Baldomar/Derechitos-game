@@ -7,8 +7,8 @@ export type ToriMood = 'idle' | 'talk' | 'happy' | 'think' | 'celebrate';
 
 const HEAD_Y = -62;
 const BEAK_LOW_Y = 50;
-const TAIL_ANGLE = -48;
-const WING_ANGLE = 14;
+const TAIL_ANGLE = 0;
+const WING_ANGLE = 6;
 const EYES: [number, number][] = [
   [-30, 4],
   [30, 4],
@@ -52,10 +52,10 @@ export class Tori extends Phaser.GameObjects.Container {
       oy = 0.5,
     ): Phaser.GameObjects.Image => scene.add.image(px, py, key).setOrigin(ox, oy);
 
-    this.tail = img(30, 92, TEX.toriTail, 0.5, 0).setAngle(TAIL_ANGLE);
-    this.wingL = img(-66, -8, TEX.toriWing, 0.5, 0.08).setFlipX(true).setAngle(WING_ANGLE);
-    this.wingR = img(66, -8, TEX.toriWing, 0.5, 0.08).setAngle(-WING_ANGLE);
-    const feet = img(0, 128, TEX.toriFeet);
+    this.tail = img(0, 104, TEX.toriTail, 0.5, 0).setAngle(TAIL_ANGLE);
+    this.wingL = img(-60, -12, TEX.toriWing, 0.5, 0.06).setFlipX(true).setAngle(WING_ANGLE);
+    this.wingR = img(60, -12, TEX.toriWing, 0.5, 0.06).setAngle(-WING_ANGLE);
+    const feet = img(0, 128, TEX.toriFeet).setScale(1.25);
     this.torso = img(0, 40, TEX.toriBody);
     this.belly = img(0, 58, TEX.toriBelly);
 
@@ -76,13 +76,14 @@ export class Tori extends Phaser.GameObjects.Container {
       beakTop,
     ]);
 
+    // Las alas van delante del cuerpo (cubren sus costados), como en el dibujo de Tori.
     this.rig = scene.add.container(0, 0, [
       this.tail,
-      this.wingL,
-      this.wingR,
       feet,
       this.torso,
       this.belly,
+      this.wingL,
+      this.wingR,
       this.head,
     ]);
     this.add(this.rig);
@@ -132,7 +133,7 @@ export class Tori extends Phaser.GameObjects.Container {
     });
     t.add({
       targets: this.tail,
-      angle: TAIL_ANGLE + 6,
+      angle: TAIL_ANGLE + 4,
       duration: 1900,
       yoyo: true,
       repeat: -1,

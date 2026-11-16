@@ -5,19 +5,47 @@ import { ensureScene, goTo } from '@/core/SceneTransition';
 import { ensureTextures } from '@/core/Textures';
 import { SCENE_LOADERS } from '@/core/SceneRegistry';
 
-const FONT_TIMEOUT_MS = 2500;
+const FONT_TIMEOUT_MS = 6000;
 
-/** Espera Baloo 2 y Nunito; si no llegan a tiempo (sin internet) se usan las de respaldo. */
-function waitForFonts(): Promise<void> {
+/** Las cuatro variantes que usa el juego (títulos Baloo 2, textos Nunito). */
+function loadFonts(): Promise<void> {
   if (!('fonts' in document)) return Promise.resolve();
-  const loads = Promise.all([
+  return Promise.all([
     document.fonts.load('800 48px "Baloo 2"'),
+    document.fonts.load('600 48px "Baloo 2"'),
     document.fonts.load('800 24px "Nunito"'),
+    document.fonts.load('600 24px "Nunito"'),
   ]).then(
     () => undefined,
     () => undefined,
   );
-  const timeout = new Promise<void>((resolve) => window.setTimeout(resolve, FONT_TIMEOUT_MS));
+}
+
+/** Vuelve a dibujar todos los textos visibles (por si se crearon antes de que llegara la fuente). */
+function refreshTexts(game: Phaser.Game): void {
+  const visit = (obj: Phaser.GameObjects.GameObject): void => {
+    if (obj instanceof Phaser.GameObjects.Text) obj.updateText();
+    else if (obj instanceof Phaser.GameObjects.Container) obj.list.forEach(visit);
+  };
+  game.scene.getScenes(true).forEach((scene) => scene.children.list.forEach(visit));
+}
+
+/**
+ * Espera Baloo 2 y Nunito hasta 6 s. Si llegan después (internet lento), los textos que ya
+ * estaban en pantalla se redibujan con la fuente correcta; sin internet se usan las de respaldo.
+ */
+function waitForFonts(game: Phaser.Game): Promise<void> {
+  let timedOut = false;
+  const loads = loadFonts();
+  void loads.then(() => {
+    if (timedOut) refreshTexts(game);
+  });
+  const timeout = new Promise<void>((resolve) =>
+    window.setTimeout(() => {
+      timedOut = true;
+      resolve();
+    }, FONT_TIMEOUT_MS),
+  );
   return Promise.race([loads, timeout]);
 }
 
@@ -46,7 +74,7 @@ export default class PreloadScene extends Phaser.Scene {
   }
 
   private async continue(): Promise<void> {
-    await Promise.all([waitForFonts(), ensureScene(this.game, 'Title')]);
+    await Promise.all([waitForFonts(this.game), ensureScene(this.game, 'Title')]);
     this.drawBar(1);
     await goTo(this, 'Title');
     // En desarrollo (npm start) cada escena son decenas de archivos sueltos: se descargan

@@ -5,7 +5,7 @@ Si un archivo no existe, el juego usa la voz sintética del navegador con el mis
 
 **Recomendaciones:** voz alegre y pausada, tono un poco agudo (Tori es un pajarito), MP3 mono a 64–96 kbps, sin silencios largos al inicio o al final.
 
-Total: 180 líneas.
+Total: 178 líneas.
 
 ## General
 
@@ -13,8 +13,6 @@ Total: 180 líneas.
 | --- | --- |
 | `title_hello.mp3` | ¡Hola! Toca el botón amarillo para jugar. |
 | `title_intro.mp3` | ¡Hola! Soy Tori. ¿Me ayudas a descubrir tus derechos? |
-| `title_help.mp3` | Toca el botón amarillo para jugar. El botón de la bocina apaga o prende el sonido. |
-| `title_lock.mp3` | Ese candado es para tu maestra o maestro. |
 | `intro_01.mp3` | ¡Hola! Soy Tori, un torogoz de El Salvador. |
 | `intro_02.mp3` | Juntos vamos a conocer nuestros derechos jugando. ¡Será muy divertido! |
 | `intro_03.mp3` | En cada juego ganarás estrellas y medallas. ¿Me acompañas? |
@@ -74,8 +72,8 @@ Total: 180 líneas.
 | `salud_dia_cepillarse.mp3` | Luego nos cepillamos los dientes. |
 | `salud_dia_jugar.mp3` | Después jugamos un rato. |
 | `salud_dia_dormir.mp3` | Al final del día, dormimos. |
-| `salud_amigo_intro.mp3` | Mi amigo Osito está enfermo. ¿Qué debe hacer? |
-| `salud_amigo_q.mp3` | Toca las tres cosas que ayudan a Osito. |
+| `salud_amigo_intro.mp3` | Mi amigo Mateo está enfermo. ¿Qué debe hacer? |
+| `salud_amigo_q.mp3` | Toca las tres cosas que ayudan a Mateo. |
 | `salud_amigo_dulces.mp3` | Los dulces no curan. ¡Inténtalo otra vez! |
 | `salud_amigo_soda.mp3` | La soda no lo ayuda. Busca algo que lo cuide. |
 | `salud_final_intro.mp3` | ¡Desafío final! Escucha cada pregunta y toca la respuesta. |
@@ -163,19 +161,19 @@ Total: 180 líneas.
 
 | Archivo | Texto |
 | --- | --- |
-| `level03_intro.mp3` | Mi amigo osito está enfermo. ¿Me ayudas a cuidarlo? |
-| `level03_q1.mp3` | ¿Quién puede curar al osito? Toca a la persona. |
+| `level03_intro.mp3` | Mi amigo Mateo está enfermo. ¿Me ayudas a cuidarlo? |
+| `level03_q1.mp3` | ¿Quién puede curar a Mateo? Toca a la persona. |
 | `level03_ok1.mp3` | ¡Sí! La doctora cuida nuestra salud. |
 | `level03_q2.mp3` | ¿Qué usa la doctora para ver si tiene fiebre? |
 | `level03_ok2.mp3` | ¡Muy bien! El termómetro mide la fiebre. |
 | `level03_hint_cuchara.mp3` | La cuchara es para comer. Busca el termómetro. |
-| `level03_q3.mp3` | El osito tiene un raspón. ¿Qué le ponemos? |
+| `level03_q3.mp3` | Mateo tiene un raspón. ¿Qué le ponemos? |
 | `level03_ok3.mp3` | ¡Eso es! La curita protege el raspón. |
 | `level03_hint_galleta.mp3` | La galleta es para comer. Busca la curita. |
-| `level03_q4.mp3` | ¿Qué protege al osito para que no se enferme? |
+| `level03_q4.mp3` | ¿Qué protege a Mateo para que no se enferme? |
 | `level03_ok4.mp3` | ¡Correcto! Las vacunas nos protegen. |
 | `level03_hint_dulces.mp3` | Los dulces no nos protegen. Busca la vacuna. |
-| `level03_done.mp3` | ¡El osito ya está sano y feliz! Gracias por cuidarlo. |
+| `level03_done.mp3` | ¡Mateo ya está sano y feliz! Gracias por cuidarlo. |
 
 ## Isla · Nivel 4
 

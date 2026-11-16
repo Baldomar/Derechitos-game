@@ -10,10 +10,9 @@ import { BigButton } from '@/components/BigButton';
 import { Effects } from '@/components/Effects';
 import { IdleHint } from '@/components/HelperHand';
 import { addStarIcon } from '@/components/Icons';
-import { SpeechBubble } from '@/components/SpeechBubble';
 import { StarCounter, flyStars } from '@/components/StarReward';
 import { addBody, addTitle } from '@/components/Text';
-import { Tori } from '@/components/Tori';
+import { addToriGuide } from '@/components/ToriGuide';
 import { AudioManager } from '@/core/AudioManager';
 import { motion, vibrate } from '@/core/Device';
 import { GameState, type ActivityResult } from '@/core/GameState';
@@ -83,8 +82,7 @@ export default class ActivityRewardScene extends Phaser.Scene {
       () => void flyStars(this, SLOTS[1] ?? { x: 640, y: 160 }, counter, gained, effects),
     );
 
-    const tori = new Tori(this, 115, 600, 0.5);
-    const bubble = new SpeechBubble(this, 560, 612, { width: 620, tail: 'left', tori });
+    const { tori, bubble } = addToriGuide(this);
     const lines: VoiceLine[] = [];
     if (this.activity.kind === 'level')
       lines.push(getLevelByScene(this.activity.sceneKey).dialog.lesson);

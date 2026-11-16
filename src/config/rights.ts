@@ -58,7 +58,7 @@ export interface ChoiceOption {
 
 export interface ChoiceActivity extends ActivityBase {
   kind: 'choice';
-  /** Personaje que acompaña la pregunta (p. ej. el osito enfermo). */
+  /** Personaje que acompaña la pregunta (p. ej. Mateo enfermo). */
   character?: ArtKey;
   rounds: { question: VoiceLine; options: ChoiceOption[] }[];
 }
@@ -323,7 +323,7 @@ export const RIGHT_AREAS: readonly RightArea[] = [
         mismatchesPerError: 3,
         tryAgain: v('salud_mem_try', '¡Inténtalo otra vez! Recuerda dónde estaba cada carta.'),
       },
-      level('clinica', 'Clínica de Tori', 'osito-enfermo', 'Level03'),
+      level('clinica', 'Clínica de Tori', 'nino-enfermo', 'Level03'),
     ],
     challenges: [
       {
@@ -370,16 +370,16 @@ export const RIGHT_AREAS: readonly RightArea[] = [
         kind: 'choice',
         id: 'ayuda-amigo',
         title: 'Ayuda a tu amigo',
-        icon: 'osito-enfermo',
-        character: 'osito-enfermo',
-        intro: [v('salud_amigo_intro', 'Mi amigo Osito está enfermo. ¿Qué debe hacer?')],
+        icon: 'nino-enfermo',
+        character: 'nino-enfermo',
+        intro: [v('salud_amigo_intro', 'Mi amigo Mateo está enfermo. ¿Qué debe hacer?')],
         done: v(
           'salud_amigo_done',
-          '¡Gracias por ayudar a Osito! Cuando alguien está enfermo, avisamos a un adulto.',
+          '¡Gracias por ayudar a Mateo! Cuando alguien está enfermo, avisamos a un adulto.',
         ),
         rounds: [
           {
-            question: v('salud_amigo_q', 'Toca las tres cosas que ayudan a Osito.'),
+            question: v('salud_amigo_q', 'Toca las tres cosas que ayudan a Mateo.'),
             options: [
               { id: 'adulto', art: 'mama', label: 'Decirle a un adulto', correct: true },
               {

@@ -5,12 +5,11 @@ import { FINAL_LINES } from '@/config/phrases';
 import { ensureArt, tex } from '@/art/Art';
 import { addBackdrop } from '@/components/Backdrop';
 import { addRightMedal } from '@/components/Badges';
-import { BigButton } from '@/components/BigButton';
+import { PillButton } from '@/components/PillButton';
 import { Effects } from '@/components/Effects';
 import { addStarIcon } from '@/components/Icons';
-import { SpeechBubble } from '@/components/SpeechBubble';
 import { addBody, addTitle } from '@/components/Text';
-import { Tori } from '@/components/Tori';
+import { addToriGuide } from '@/components/ToriGuide';
 import { AudioManager } from '@/core/AudioManager';
 import { motion, vibrate } from '@/core/Device';
 import { GameState } from '@/core/GameState';
@@ -112,32 +111,23 @@ export default class FinalScene extends Phaser.Scene {
       },
     });
 
-    const tori = new Tori(this, 115, 600, 0.5);
-    const bubble = new SpeechBubble(this, 560, 646, {
-      width: 560,
-      tail: 'left',
-      tori,
-      fontSize: 26,
-    });
+    const { tori, bubble } = addToriGuide(this);
     this.time.delayedCall(1300, () => {
       tori.setMood('celebrate');
       void bubble.say(FINAL_LINES);
     });
     this.time.addEvent({ delay: 4500, loop: true, callback: () => effects.celebrate() });
 
-    new BigButton(this, GAME_WIDTH - 280, 650, {
+    new PillButton(this, GAME_WIDTH - 286, 654, {
       label: 'Isla',
-      width: 190,
-      height: 88,
-      fontSize: 36,
-      color: COLORS.white,
+      icon: 'back',
+      width: 130,
       onClick: () => void goTo(this, 'WorldMap'),
     });
-    new BigButton(this, GAME_WIDTH - 90, 650, {
+    new PillButton(this, GAME_WIDTH - 114, 654, {
       label: 'Medallas',
-      width: 170,
-      height: 88,
-      fontSize: 30,
+      icon: 'medal',
+      width: 200,
       color: COLORS.sun,
       onClick: () => void goTo(this, 'Medals'),
     });

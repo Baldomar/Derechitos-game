@@ -4,6 +4,7 @@ import BootScene from '@/scenes/Boot';
 import PreloadScene from '@/scenes/Preload';
 import { AudioManager } from '@/core/AudioManager';
 import { initViewport } from '@/core/Viewport';
+import { initOrientation } from '@/core/Orientation';
 
 /**
  * Solo Boot y Preload van en el bundle inicial; el resto de escenas se descargan
@@ -31,6 +32,7 @@ const config: Phaser.Types.Core.GameConfig = {
 AudioManager.init();
 const game = new Phaser.Game(config);
 initViewport(game);
+initOrientation(game);
 
 // Solo en desarrollo: atajo para pruebas automáticas (no se incluye en el build de producción).
 if (import.meta.env.DEV) {

@@ -4,6 +4,7 @@ import { GENERIC_HINT, pickPraise } from '@/config/phrases';
 import type { VoiceLine } from '@/config/levels';
 import { addBackdrop } from '@/components/Backdrop';
 import { BigButton } from '@/components/BigButton';
+import { PillButton } from '@/components/PillButton';
 import { DraggableItem } from '@/components/DraggableItem';
 import { DropZone } from '@/components/DropZone';
 import { Effects } from '@/components/Effects';
@@ -42,12 +43,10 @@ export default class LabScene extends Phaser.Scene {
     const bubble = new SpeechBubble(this, 560, 170, { width: 560, tail: 'left', tori });
     const counter = new StarCounter(this, GAME_WIDTH - 110, 60, 0);
 
-    new BigButton(this, 90, 60, {
+    new PillButton(this, 100, 58, {
       label: 'Salir',
-      width: 150,
-      height: 88,
-      fontSize: 34,
-      color: COLORS.white,
+      icon: 'back',
+      width: 140,
       onClick: () => void goTo(this, 'Teacher'),
     });
 
