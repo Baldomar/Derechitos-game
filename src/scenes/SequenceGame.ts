@@ -76,9 +76,20 @@ export default class SequenceGameScene extends BaseActivity<SequenceActivity> {
       );
       const img = fitImage(this.add.image(0, -16, tex(step.art)), 105, 95);
       const label = addBody(this, 0, 56, step.label, 20);
+      const parts: Phaser.GameObjects.GameObject[] = [bg, img, label];
+      if (this.activity.numbered) {
+        // Número del paso en la esquina: el mismo que el del recuadro donde va.
+        const n = steps.findIndex((s) => s.id === step.id) + 1;
+        const badge = this.add.graphics();
+        badge.fillStyle(COLORS.ink, 0.2).fillCircle(-CARD_W / 2 + 18, -CARD_H / 2 + 22, 22);
+        badge.fillStyle(COLORS.sun).fillCircle(-CARD_W / 2 + 16, -CARD_H / 2 + 18, 22);
+        badge.lineStyle(4, COLORS.ink).strokeCircle(-CARD_W / 2 + 16, -CARD_H / 2 + 18, 22);
+        const num = addTitle(this, -CARD_W / 2 + 16, -CARD_H / 2 + 20, String(n), 28);
+        parts.push(badge, num);
+      }
       const card = new DraggableItem(this, this.xFor(i), CARD_Y, {
         id: step.id,
-        content: [bg, img, label],
+        content: parts,
         width: CARD_W,
         height: CARD_H,
         zones: this.slots,

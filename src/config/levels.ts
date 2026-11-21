@@ -129,14 +129,38 @@ export interface SchoolContent {
   done: VoiceLine;
 }
 
+/** Objeto que un niño lleva en la mano (solo decorativo). */
+export interface HeldThing {
+  art: ArtKey;
+  side: 'left' | 'right';
+  /** Tamaño (lado mayor, en px del dibujo del niño). */
+  size: number;
+  dx?: number;
+  dy?: number;
+  angle?: number;
+  /** Levanta ese brazo (p. ej. el pincel en alto). */
+  raise?: boolean;
+}
+
+/**
+ * "Parque para todos": se toca un objeto (paso 1) y luego el escalón (paso 2). Sirve para otros
+ * retos parecidos cambiando los objetos, el correcto, los mensajes y los niños.
+ */
 export interface ParkContent {
   kind: 'park';
+  /** Mensaje inicial (también es la instrucción que Tori repite). */
   rampQuestion: VoiceLine;
+  /** Objetos de la repisa (uno es el correcto). */
   options: ChoiceDef[];
+  /** Si toca el escalón sin escoger un objeto. */
+  needObject: VoiceLine;
+  /** Al poner el objeto correcto. */
   rampDone: VoiceLine;
-  invite: VoiceLine;
-  kids: (ItemDef & { wheelchair?: boolean })[];
-  done: VoiceLine;
+  /**
+   * Niños en la plaza, de izquierda a derecha: `x` = dónde esperan, `spot` = dónde quedan en el
+   * parque. El que tiene `wheelchair` sube primero rodando por la rampa.
+   */
+  kids: (ItemDef & { wheelchair?: boolean; x: number; spot: number; holds?: HeldThing[] })[];
 }
 
 export interface DayNightContent {
@@ -149,10 +173,15 @@ export interface DayNightContent {
 
 export interface VoiceContent {
   kind: 'voice';
-  feelings: (ItemDef & { reply: VoiceLine })[];
+  /**
+   * Emociones. Al tocar una, aparece una tarjeta de ayuda con `tip` (texto) y `help` (dibujo);
+   * `breathe` muestra un ejercicio de respiración (inhala… exhala…).
+   */
+  feelings: (ItemDef & { reply: VoiceLine; tip: string; help?: ArtKey; breathe?: boolean })[];
   thanks: VoiceLine;
-  voteQuestion: VoiceLine;
-  names: (ItemDef & { chosen: VoiceLine })[];
+  /** Paso 2: el niño dice lo que piensa (no hay respuestas incorrectas). */
+  ideaQuestion: VoiceLine;
+  ideas: (ItemDef & { chosen: VoiceLine })[];
   done: VoiceLine;
 }
 
@@ -207,7 +236,7 @@ export const LEVELS: readonly LevelDef[] = [
     title: 'Casa segura',
     rights: ['vivienda', 'vida'],
     mechanicLabel:
-      'Arrastrar paredes, techo, puerta y ventana para armar la casa; luego llevar a la familia adentro cuando llueve',
+      'Arrastrar paredes, techo, puerta y ventana para armar la casa; luego tocar a la familia para que corra adentro cuando llueve',
     icon: 'icon-vivienda',
     zone: { x: 190, y: 560, color: COLORS.coral },
     medal: { name: 'Medalla del Hogar', color: COLORS.coral },
@@ -256,7 +285,7 @@ export const LEVELS: readonly LevelDef[] = [
       built: v('level01_built', '¡Qué bonita casa! Pero... ¡mira, empieza a llover!'),
       rain: v(
         'level01_rain',
-        'Lleva a la familia adentro de la casa, por la puerta, para que no se mojen.',
+        'Toca a cada uno para que corra a la casa. ¡Rápido, que no se mojen!',
       ),
       safe: v(
         'level01_safe',
@@ -274,7 +303,7 @@ export const LEVELS: readonly LevelDef[] = [
       'Arrastrar alimentos nutritivos a la lonchera; los distractores rebotan con una pista amable',
     icon: 'icon-alimentacion',
     zone: { x: 400, y: 480, color: COLORS.sun },
-    medal: { name: 'Medalla de la Buena Comida', color: COLORS.sun },
+    medal: { name: 'Medalla de la Buena Alimentación', color: COLORS.sun },
     sticker: { id: 'lonchera', label: 'Mi lonchera' },
     dialog: {
       intro: [
@@ -500,29 +529,24 @@ export const LEVELS: readonly LevelDef[] = [
     title: 'Parque para todos',
     rights: ['igualdad'],
     mechanicLabel:
-      'Poner una rampa para la niña en silla de ruedas e invitar a todos a jugar tocándolos',
+      'Tocar el objeto que ayuda (la rampa) y luego el escalón para que Sofía y todos suban al parque',
     icon: 'icon-igualdad',
     zone: { x: 740, y: 270, color: COLORS.orange },
     medal: { name: 'Medalla de la Amistad', color: COLORS.orange },
     sticker: { id: 'parque', label: 'Parque para todos' },
     dialog: {
       intro: [
-        v(
-          'level05_intro',
-          'Mira el parque. ¡Todos quieren jugar! Ayúdame a que todos puedan entrar.',
-        ),
+        v('level05_intro', 'Sofía usa silla de ruedas y no puede subir el escalón.'),
+        v('level05_ramp_q', 'Paso 1: toca un objeto. Paso 2: toca el escalón.'),
       ],
       lesson: v(
         'level05_lesson',
-        'Cuando todos caben, todos ganamos. Todas y todos valemos lo mismo.',
+        'Todas y todos valemos lo mismo. Cuando nadie se queda afuera, jugar es más divertido.',
       ),
     },
     content: {
       kind: 'park',
-      rampQuestion: v(
-        'level05_ramp_q',
-        'Sofía usa silla de ruedas y no puede subir el escalón. Arrastra lo que la puede ayudar.',
-      ),
+      rampQuestion: v('level05_ramp_q', 'Paso 1: toca un objeto. Paso 2: toca el escalón.'),
       options: [
         {
           id: 'escalera',
@@ -531,27 +555,56 @@ export const LEVELS: readonly LevelDef[] = [
           correct: false,
           hint: v(
             'level05_hint_escalera',
-            'Con una escalera, la silla no puede subir. Busca algo sin escalones.',
+            '¡Ups! Con su silla de ruedas, Sofía no puede subir por una escalera. Prueba otra cosa.',
           ),
         },
-        { id: 'rampa', art: 'rampa', label: 'Rampa', correct: true },
+        { id: 'rampa', art: 'rampa-baranda', label: 'Rampa', correct: true },
         {
           id: 'pelota',
           art: 'pelota',
           label: 'Pelota',
           correct: false,
-          hint: v('level05_hint_pelota', 'La pelota es para jugar. Busca la rampa para subir.'),
+          hint: v(
+            'level05_hint_pelota',
+            '¡Ups! La pelota es para jugar, pero no ayuda a subir. Prueba otra cosa.',
+          ),
         },
       ],
-      rampDone: v('level05_ramp_ok', '¡Sí! Con la rampa, Sofía puede entrar al parque.'),
-      invite: v('level05_invite', 'Ahora invita a todos a jugar. ¡Toca a cada niño y niña!'),
+      needObject: v('level05_need', 'Paso 1: primero toca un objeto de arriba.'),
+      rampDone: v(
+        'level05_ramp_ok',
+        '¡Muy bien! Con la rampa, Sofía puede subir. ¡Ahora todos juegan juntos!',
+      ),
       kids: [
-        { id: 'camila', art: 'nina-b', label: 'Camila' },
-        { id: 'jose', art: 'nino-a', label: 'José' },
-        { id: 'daniel', art: 'nino-c', label: 'Daniel' },
-        { id: 'sofia', art: 'nina-silla', label: 'Sofía', wheelchair: true },
+        {
+          id: 'valentina',
+          art: 'nina-b',
+          label: 'Valentina',
+          x: 95,
+          spot: 900,
+          holds: [
+            { art: 'cuaderno', side: 'right', size: 30, dx: -10, dy: 4, angle: -8 },
+            { art: 'lapiz', side: 'left', size: 30, dx: 8, dy: 2, angle: -60 },
+          ],
+        },
+        {
+          id: 'daniel',
+          art: 'nino-a',
+          label: 'Daniel',
+          x: 205,
+          spot: 1010,
+          holds: [{ art: 'balon', side: 'right', size: 30, dx: 12, dy: -4 }],
+        },
+        {
+          id: 'lucas',
+          art: 'nino-c',
+          label: 'Lucas',
+          x: 315,
+          spot: 1120,
+          holds: [{ art: 'pincel', side: 'right', size: 40, dy: 8, angle: 180, raise: true }],
+        },
+        { id: 'sofia', art: 'nina-silla', label: 'Sofía', wheelchair: true, x: 440, spot: 790 },
       ],
-      done: v('level05_done', '¡Cuando todos caben, todos ganamos!'),
     },
   },
   {
@@ -575,7 +628,7 @@ export const LEVELS: readonly LevelDef[] = [
       sky: v('level06_sky', 'Mira cómo el día se vuelve noche.'),
       task: v(
         'level06_task',
-        'Lleva lo que usamos para jugar al sol, y lo que usamos para descansar a la luna.',
+        'Lleva lo que usamos para jugar en el día, y lo que usamos para descansar en la noche.',
       ),
       items: [
         {
@@ -595,11 +648,11 @@ export const LEVELS: readonly LevelDef[] = [
         {
           id: 'papalote',
           art: 'papalote',
-          label: 'Papalote',
+          label: 'Piscucha',
           time: 'day',
           hint: v(
             'level06_hint_papalote',
-            'El papalote vuela con el viento del día. Llévalo con el sol.',
+            'La piscucha vuela con el viento del día. Llévala con el sol.',
           ),
         },
         {
@@ -637,7 +690,7 @@ export const LEVELS: readonly LevelDef[] = [
     title: 'Mi voz cuenta',
     rights: ['opinion'],
     mechanicLabel:
-      'Elegir una carita de cómo se siente y votar por el nombre de la mascota (sin respuestas incorrectas)',
+      'Elegir una carita de cómo se siente (con un consejo que ayuda) y decir qué le gustaría hacer (sin respuestas incorrectas)',
     icon: 'icon-opinion',
     zone: { x: 1070, y: 330, color: COLORS.pink },
     medal: { name: 'Medalla de Mi Voz', color: COLORS.pink },
@@ -661,13 +714,20 @@ export const LEVELS: readonly LevelDef[] = [
           id: 'feliz',
           art: 'cara-feliz',
           label: 'Feliz',
-          reply: v('level07_feliz', '¡Qué alegría! Me encanta verte feliz.'),
+          reply: v('level07_feliz', '¡Qué alegría! Comparte tu alegría con tus amigos.'),
+          tip: 'Comparte tu alegría con tus amigos.',
+          help: 'nino-a',
         },
         {
           id: 'tranquilo',
           art: 'cara-tranquila',
           label: 'Tranquilo',
-          reply: v('level07_tranquilo', '¡Qué bien! Estar tranquilo se siente bonito.'),
+          reply: v(
+            'level07_tranquilo',
+            '¡Qué bien! Cuando estás tranquilo, puedes pensar y escuchar mejor.',
+          ),
+          tip: 'Tranquilo puedes pensar y escuchar mejor.',
+          help: 'cuento',
         },
         {
           id: 'triste',
@@ -675,51 +735,69 @@ export const LEVELS: readonly LevelDef[] = [
           label: 'Triste',
           reply: v(
             'level07_triste',
-            'Está bien sentirse triste. Puedes contárselo a alguien que te quiere.',
+            'Está bien sentirse triste. Cuéntaselo a alguien que te quiere, como mamá o papá.',
           ),
+          tip: 'Cuéntaselo a alguien que te quiere.',
+          help: 'mama',
         },
         {
           id: 'enojado',
           art: 'cara-enojada',
           label: 'Enojado',
-          reply: v('level07_enojado', 'Está bien enojarse. Respiremos profundo juntos.'),
+          reply: v(
+            'level07_enojado',
+            'Está bien enojarse. Respiremos profundo juntos: inhala… y exhala…',
+          ),
+          tip: 'Respira profundo conmigo.',
+          breathe: true,
         },
         {
           id: 'asustado',
           art: 'cara-asustada',
           label: 'Asustado',
-          reply: v('level07_asustado', 'Todos sentimos miedo a veces. Aquí estás seguro.'),
+          reply: v(
+            'level07_asustado',
+            'Todos sentimos miedo a veces. Busca a un adulto de confianza y cuéntale.',
+          ),
+          tip: 'Busca a un adulto de confianza y cuéntale.',
+          help: 'papa',
         },
       ],
       thanks: v(
         'level07_thanks',
         'Gracias por decirme cómo te sientes. Tus sentimientos importan.',
       ),
-      voteQuestion: v(
-        'level07_vote',
-        'Ahora vamos a votar. ¿Cómo se llamará el perrito del parque: Mango, Luna o Copito?',
+      ideaQuestion: v(
+        'level07_idea',
+        'Ahora dime lo que piensas: ¿qué te gustaría hacer hoy? Toca tu idea.',
       ),
-      names: [
+      ideas: [
         {
-          id: 'mango',
-          art: 'mango',
-          label: 'Mango',
-          chosen: v('level07_voto_mango', '¡Votaste por Mango!'),
+          id: 'jugar',
+          art: 'pelota',
+          label: 'Jugar',
+          chosen: v('level07_idea_jugar', '¡Te escuché! Te gustaría jugar con tus amigos.'),
         },
         {
-          id: 'luna',
-          art: 'luna',
-          label: 'Luna',
-          chosen: v('level07_voto_luna', '¡Votaste por Luna!'),
+          id: 'leer',
+          art: 'cuento',
+          label: 'Leer',
+          chosen: v('level07_idea_leer', '¡Te escuché! Te gustaría leer un cuento.'),
         },
         {
-          id: 'copito',
-          art: 'copito',
-          label: 'Copito',
-          chosen: v('level07_voto_copito', '¡Votaste por Copito!'),
+          id: 'dibujar',
+          art: 'crayon',
+          label: 'Dibujar',
+          chosen: v('level07_idea_dibujar', '¡Te escuché! Te gustaría dibujar.'),
+        },
+        {
+          id: 'ayudar',
+          art: 'esponja',
+          label: 'Ayudar en casa',
+          chosen: v('level07_idea_ayudar', '¡Te escuché! Te gustaría ayudar en casa.'),
         },
       ],
-      done: v('level07_done', '¡Gracias por votar! Tu voz cuenta y tu opinión es importante.'),
+      done: v('level07_done', '¡Gracias por contarme lo que sientes y piensas! Tu voz cuenta.'),
     },
   },
   {
@@ -741,13 +819,18 @@ export const LEVELS: readonly LevelDef[] = [
       'Juego de memoria con 8 parejas (derecho ↔ ilustración); al final se arma la imagen de la isla',
     icon: 'icon-isla',
     zone: { x: 930, y: 190, color: COLORS.sun },
-    medal: { name: 'Gran Medalla de los Derechos', color: COLORS.sun },
+    medal: { name: 'Medalla: Aprendo mis derechos', color: COLORS.sun },
     sticker: { id: 'isla', label: 'La Isla Derechitos' },
     dialog: {
-      intro: [v('level08_intro', '¡Último reto! Toca dos cartas y encuentra las parejas iguales.')],
+      intro: [
+        v(
+          'level08_intro',
+          'Aprender también es conocer nuestros derechos. Toca dos cartas y encuentra las parejas.',
+        ),
+      ],
       lesson: v(
         'level08_lesson',
-        '¡Lo lograste! Ahora conoces todos tus derechos. ¡Eres Guardián de los Derechos!',
+        'En la escuela aprendemos muchas cosas, ¡también nuestros derechos!',
       ),
     },
     content: {

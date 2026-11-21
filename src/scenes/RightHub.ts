@@ -9,7 +9,8 @@ import {
 } from '@/config/rights';
 import type { VoiceLine } from '@/config/levels';
 import { HUB_FINAL_LOCKED, HUB_LOCKED, HUB_SOON } from '@/config/phrases';
-import { ensureArt, tex } from '@/art/Art';
+import { ensureArt, tex, type ArtKey } from '@/art/Art';
+import { gameIcon } from '@/art/GameIcons';
 import { addBackdrop } from '@/components/Backdrop';
 import { addRightMedal } from '@/components/Badges';
 import { Effects } from '@/components/Effects';
@@ -26,18 +27,34 @@ import { motion, prefersReducedMotion } from '@/core/Device';
 import { GameState } from '@/core/GameState';
 import { goTo, prefetchScene } from '@/core/SceneTransition';
 import { fitImage } from './BaseActivity';
+import { hubMedalLine, hubStatus } from '@/config/voiceCatalog';
 
-/** Área de tarjetas (a la derecha del panel de la medalla). */
-const AREA_X = 330;
-const AREA_W = 914;
-const GAP = 18;
-const GAMES_Y = 272;
-const GAME_H = 168;
-const CHALL_Y = 482;
-const CHALL_H = 100;
+/**
+ * Camino del derecho: arriba los JUEGOS (1 → 2 → 3) y, tras una curva a la derecha, los
+ * RETOS (4 → 5 → 6) de regreso hacia la MEDALLA. Así el niño ve un recorrido con meta.
+ */
+const ROW1_Y = 240;
+const ROW2_Y = 492;
+const PATH_LEFT = 40;
+const PATH_RIGHT = 1196;
+const TURN_R = (ROW2_Y - ROW1_Y) / 2;
+const GAME_H = 200;
+const CHALL_W = 250;
+const CHALL_H = 132;
+const MEDAL = { x: 196, y: 468 };
+const ROAD = 0xf6dfa4;
 
-/** Fondos suaves para los íconos de los juegos (como fichas de colores). */
-const TILE_TINTS = [0xfff1c2, 0xdcefff, 0xffe0e0, 0xf1e4d4, 0xe3f6dc, 0xece4ff];
+/** Adorno temático de cada derecho (esquina inferior derecha). */
+const DECOR: Partial<Record<string, ArtKey>> = {
+  salud: 'curita',
+  educacion: 'mochila',
+  vida: 'arbol',
+  alimentacion: 'canasta',
+  vivienda: 'camita',
+  igualdad: 'rampa',
+  jugar: 'papalote',
+  opinion: 'urna',
+};
 
 /** Derechos ya explicados en esta sesión (para no repetir la explicación en cada regreso). */
 const explained = new Set<string>();
@@ -51,8 +68,6 @@ function darken(color: number, f = 0.62): number {
   const b = Math.round((color & 0xff) * f);
   return (r << 16) | (g << 8) | b;
 }
-
-const cssColor = (c: number): string => `#${c.toString(16).padStart(6, '0')}`;
 
 /** Borde punteado de rectángulo redondeado (tarjetas bloqueadas). */
 function dashedRoundRect(
@@ -95,8 +110,9 @@ function dashedRoundRect(
 }
 
 /**
- * Pantalla de un derecho: panel "Tu medalla" (progreso), JUEGOS, DESAFÍOS (se abren al terminar
- * los juegos) y Tori diciendo qué sigue. El siguiente juego se resalta con "¡Te toca!".
+ * Pantalla de un derecho como un CAMINO: juegos numerados arriba, retos abajo (se abren al
+ * terminar los juegos) y la medalla al final, con su anillo de progreso. Tori dice qué sigue
+ * y el siguiente paso se resalta con "¡Te toca!".
  */
 export default class RightHubScene extends Phaser.Scene {
   private right!: RightArea;
@@ -121,7 +137,7 @@ export default class RightHubScene extends Phaser.Scene {
     addBackdrop(this);
     new Effects(this);
 
-    // Lo que "toca" ahora: primer juego pendiente; si no hay, primer desafío abierto pendiente.
+    // Lo que "toca" ahora: primer juego pendiente; si no hay, primer reto abierto pendiente.
     const pendingGame = r.games.find(
       (a) => isPlayable(a) && GameState.getActivityStars(r.id, a.id) === 0,
     );
@@ -134,9 +150,11 @@ export default class RightHubScene extends Phaser.Scene {
     this.next = pendingGame ?? pendingChallenge ?? null;
 
     this.addHeader();
-    this.addMedalPanel();
+    this.addPath();
+    this.addMedal();
     this.addGames();
     this.addChallenges();
+    this.addDecor();
 
     ({ tori: this.tori, bubble: this.bubble } = addToriGuide(this));
     const status = this.statusLine();
@@ -201,19 +219,149 @@ export default class RightHubScene extends Phaser.Scene {
     total.setX(startX + count.width + 4);
   }
 
-  // ------------------------------------------------------------------ panel de la medalla
+  // ------------------------------------------------------------------ camino
 
-  private addMedalPanel(): void {
-    const r = this.right;
-    const x = 168;
+  /** Sendero de arena con puntitos: fila de juegos → curva → fila de retos → medalla. */
+  private addPath(): void {
+    const V = Phaser.Math.Vector2;
+    const rx = 52;
+    const pts: Phaser.Math.Vector2[] = [new V(PATH_LEFT, ROW1_Y), new V(PATH_RIGHT, ROW1_Y)];
+    for (let k = 1; k < 28; k++) {
+      const a = -Math.PI / 2 + (Math.PI * k) / 28;
+      pts.push(new V(PATH_RIGHT + Math.cos(a) * rx, ROW1_Y + TURN_R + Math.sin(a) * TURN_R));
+    }
+    pts.push(new V(PATH_RIGHT, ROW2_Y), new V(MEDAL.x, ROW2_Y));
+
     const g = this.add.graphics();
-    g.fillStyle(COLORS.ink, 0.2).fillRoundedRect(36, 134, 264, 414, 24);
-    g.fillStyle(COLORS.white).fillRoundedRect(36, 128, 264, 414, 24);
-    g.lineStyle(4, COLORS.ink).strokeRoundedRect(36, 128, 264, 414, 24);
-    addTitle(this, x, 162, 'Tu medalla', 24);
+    const stroke = (w: number, color: number, alpha = 1): void => {
+      g.lineStyle(w, color, alpha).strokePoints(pts, false);
+      g.fillStyle(color, alpha);
+      for (const p of pts) g.fillCircle(p.x, p.y, w / 2);
+    };
+    stroke(50, COLORS.ink);
+    stroke(40, ROAD);
 
+    // Puntitos blancos cada ~30 px a lo largo del sendero.
+    g.fillStyle(COLORS.white, 0.95);
+    let carry = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      if (!a || !b) continue;
+      const len = Phaser.Math.Distance.BetweenPoints(a, b);
+      let d = carry;
+      for (; d < len; d += 30)
+        g.fillCircle(a.x + ((b.x - a.x) * d) / len, a.y + ((b.y - a.y) * d) / len, 4);
+      carry = d - len;
+    }
+
+    // Bandera de salida.
+    const f = this.add.graphics();
+    f.lineStyle(5, COLORS.ink).lineBetween(PATH_LEFT, ROW1_Y + 22, PATH_LEFT, ROW1_Y - 54);
+    f.fillStyle(COLORS.coral).lineStyle(3, COLORS.ink);
+    const flag = [
+      { x: PATH_LEFT + 2, y: ROW1_Y - 54 },
+      { x: PATH_LEFT + 42, y: ROW1_Y - 44 },
+      { x: PATH_LEFT + 2, y: ROW1_Y - 32 },
+    ];
+    f.fillPoints(flag, true).strokePoints(flag, true);
+
+    // Flecha en la curva (hacia abajo).
+    this.arrow(PATH_RIGHT + rx, ROW1_Y + TURN_R, 'down');
+  }
+
+  /** Flechita del sendero que indica hacia dónde se avanza. */
+  private arrow(x: number, y: number, dir: 'right' | 'left' | 'down'): void {
+    const s = 11;
+    const pts =
+      dir === 'right'
+        ? [
+            { x: x - s, y: y - s },
+            { x: x + s, y },
+            { x: x - s, y: y + s },
+          ]
+        : dir === 'left'
+          ? [
+              { x: x + s, y: y - s },
+              { x: x - s, y },
+              { x: x + s, y: y + s },
+            ]
+          : [
+              { x: x - s, y: y - s },
+              { x: x + s, y: y - s },
+              { x, y: y + s },
+            ];
+    const g = this.add.graphics();
+    g.lineStyle(4, COLORS.ink).strokePoints(pts, true);
+  }
+
+  /** Pastilla blanca de sección ("Juegos" / "Retos"). */
+  private sectionPill(x: number, y: number, text: string): void {
+    const t = addBody(this, 0, 0, text, 18);
+    const w = t.width + 34;
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.ink, 0.2).fillRoundedRect(-w / 2, -16, w, 36, 18);
+    g.fillStyle(COLORS.white).fillRoundedRect(-w / 2, -18, w, 36, 18);
+    g.lineStyle(3, COLORS.ink).strokeRoundedRect(-w / 2, -18, w, 36, 18);
+    this.add.container(x, y, [g, t]).setDepth(2);
+  }
+
+  /** Circulito con el número del paso (verde si ya está listo). */
+  private stepNumber(
+    x: number,
+    y: number,
+    n: number,
+    done: boolean,
+  ): Phaser.GameObjects.GameObject[] {
+    const c = this.add
+      .circle(x, y, 20, done ? 0x3aa655 : COLORS.white)
+      .setStrokeStyle(4, done ? COLORS.white : 0x9aa5b8);
+    const t = addTitle(this, x, y + 1, String(n), 22, { color: done ? '#FFFFFF' : '#4A4F66' });
+    return [c, t];
+  }
+
+  // ------------------------------------------------------------------ medalla
+
+  private addMedal(): void {
+    const r = this.right;
+    const { x, y } = MEDAL;
     const earned = GameState.hasRightMedal(r);
-    const medal = addRightMedal(this, x, 262, r, earned, 0.82);
+    const { done, total } = GameState.rightProgress(r);
+    const frac = total > 0 ? done / total : 0;
+
+    // Rayos que giran despacito detrás de la medalla.
+    const rays = this.add.graphics({ x, y });
+    rays.fillStyle(COLORS.sun, earned ? 0.7 : 0.4);
+    for (let k = 0; k < 12; k++) {
+      const a = (k * Math.PI) / 6;
+      const w = 0.13;
+      rays.fillPoints(
+        [
+          { x: Math.cos(a - w) * 72, y: Math.sin(a - w) * 72 },
+          { x: Math.cos(a - w * 1.4) * 138, y: Math.sin(a - w * 1.4) * 138 },
+          { x: Math.cos(a + w * 1.4) * 138, y: Math.sin(a + w * 1.4) * 138 },
+          { x: Math.cos(a + w) * 72, y: Math.sin(a + w) * 72 },
+        ],
+        true,
+      );
+    }
+    if (!prefersReducedMotion()) {
+      this.tweens.add({ targets: rays, angle: 360, duration: 24000, repeat: -1 });
+    }
+
+    // Anillo de progreso: se llena de verde con cada juego o reto terminado.
+    const ring = this.add.graphics({ x, y });
+    ring.fillStyle(COLORS.white).fillCircle(0, 0, 90);
+    ring.lineStyle(4, COLORS.ink).strokeCircle(0, 0, 90);
+    ring.fillStyle(0xdfe6ef).fillCircle(0, 0, 74);
+    ring.lineStyle(4, COLORS.ink).strokeCircle(0, 0, 74);
+    if (frac > 0) {
+      ring.lineStyle(12, COLORS.grass).beginPath();
+      ring.arc(0, 0, 82, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac);
+      ring.strokePath();
+    }
+
+    const medal = addRightMedal(this, x, y + 20, r, earned, 0.6);
     if (earned && !prefersReducedMotion()) {
       this.tweens.add({
         targets: medal,
@@ -224,65 +372,65 @@ export default class RightHubScene extends Phaser.Scene {
       });
     }
 
-    // Puntitos de progreso: uno por actividad disponible.
-    const all = [...r.games, ...r.challenges].filter(isPlayable);
-    const { done, total } = GameState.rightProgress(r);
-    const step = Math.min(30, 220 / Math.max(1, all.length));
-    all.forEach((a, i) => {
-      const dx = x + (i - (all.length - 1) / 2) * step;
-      const ok = GameState.getActivityStars(r.id, a.id) > 0;
-      this.add
-        .circle(dx, 362, 10, ok ? darken(r.color, 0.8) : COLORS.white)
-        .setStrokeStyle(3, COLORS.ink);
-    });
-    addTitle(this, x, 398, `${done} de ${total} listos`, 24);
+    // Pastilla "¡Tu medalla!" con el avance.
+    const label = addTitle(this, 0, 0, earned ? '¡Ganada!' : `¡Tu medalla! ${done}/${total}`, 19);
+    const w = label.width + 30;
+    const pg = this.add.graphics();
+    pg.fillStyle(COLORS.ink, 0.25).fillRoundedRect(-w / 2, -14, w, 34, 12);
+    pg.fillStyle(COLORS.sun).fillRoundedRect(-w / 2, -17, w, 34, 12);
+    pg.lineStyle(3, COLORS.ink).strokeRoundedRect(-w / 2, -17, w, 34, 12);
+    this.add.container(x, y + 108, [pg, label]).setDepth(2);
 
-    const hasFinal = r.challenges.some((c) => isPlayable(c) && c.medal);
-    const hint = earned
-      ? `¡Ganaste la medalla ${r.medal.name}!`
-      : hasFinal
-        ? `Termina juegos y desafíos para ganar la medalla ${r.medal.name}.`
-        : 'Completa los juegos de este derecho. ¡Pronto habrá desafíos!';
-    addBody(this, x, 470, hint, 17, { wrap: 220, color: '#4A4F66' });
+    // Tocar la medalla: Tori explica cómo ganarla.
+    const hit = this.add.circle(x, y, 92, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
+    hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
+      AudioManager.sfx('pop');
+      this.tweens.add({
+        targets: medal,
+        scale: medal.scale * 1.1,
+        duration: motion(120),
+        yoyo: true,
+      });
+      void this.bubble.say(hubMedalLine(r, earned));
+    });
+  }
+
+  /** Adorno temático del derecho (hamaca, canasta, mochila…) que se mece suavecito. */
+  private addDecor(): void {
+    const key = DECOR[this.right.id];
+    if (!key) return;
+    ensureArt(this, [key]);
+    const img = fitImage(this.add.image(1176, 642, tex(key)), 130, 110, 1.2);
+    if (!prefersReducedMotion()) {
+      this.tweens.add({
+        targets: img,
+        angle: { from: -4, to: 4 },
+        duration: 1800,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
   }
 
   // ------------------------------------------------------------------ juegos
 
   private addGames(): void {
-    const r = this.right;
-    const games = r.games;
-    const playable = games.filter(isPlayable);
-    const doneCount = playable.filter((a) => GameState.getActivityStars(r.id, a.id) > 0).length;
-    const head = this.add
-      .text(AREA_X, 152, 'Juegos', {
-        fontFamily: FONTS.title,
-        fontSize: '30px',
-        fontStyle: '800',
-        color: CSS.ink,
-        stroke: CSS.white,
-        strokeThickness: 6,
-        resolution: TEXT_RESOLUTION,
-        padding: { top: 6 },
-      })
-      .setOrigin(0, 0.5);
-    this.badge(AREA_X + head.width + 16, 154, `${doneCount} de ${playable.length}`);
-
+    const games = this.right.games;
     const n = games.length;
-    const w = (AREA_W - (n - 1) * GAP) / n;
-    games.forEach((a, i) => {
-      const x = AREA_X + w / 2 + i * (w + GAP);
-      this.gameCard(a, x, GAMES_Y, w, i);
-    });
-  }
-
-  /** Pastilla de conteo ("3 de 4"). */
-  private badge(x: number, y: number, text: string): void {
-    const t = addBody(this, 0, 0, text, 15, { color: cssColor(darken(this.right.color, 0.55)) });
-    const w = t.width + 24;
-    const g = this.add.graphics();
-    g.fillStyle(this.right.color, 0.22).fillRoundedRect(-w / 2, -14, w, 28, 14);
-    g.lineStyle(2, darken(this.right.color, 0.7)).strokeRoundedRect(-w / 2, -14, w, 28, 14);
-    this.add.container(x + w / 2, y, [g, t]);
+    const span = PATH_RIGHT - 80 + 4;
+    const w = Math.min(300, (span - (n - 1) * 34) / n);
+    const gap = n > 1 ? (span - n * w) / (n - 1) : 0;
+    const xs = games.map((_, i) => 80 + w / 2 + i * (w + gap));
+    if (gap >= 50) {
+      for (let i = 0; i < n - 1; i++) {
+        const a = xs[i];
+        const b = xs[i + 1];
+        if (a !== undefined && b !== undefined) this.arrow((a + b) / 2, ROW1_Y, 'right');
+      }
+    }
+    games.forEach((a, i) => this.gameCard(a, xs[i] ?? 640, ROW1_Y, w, i));
+    this.sectionPill((xs[0] ?? 230) - w / 2 + 70, ROW1_Y - GAME_H / 2 - 18, 'Juegos');
   }
 
   private gameCard(a: Activity, x: number, y: number, w: number, i: number): void {
@@ -291,44 +439,79 @@ export default class RightHubScene extends Phaser.Scene {
     const playable = isPlayable(a);
     const isNext = this.next === a;
     const stars = playable ? GameState.getActivityStars(r.id, a.id) : 0;
+    const done = stars > 0;
 
     const g = this.add.graphics();
-    g.fillStyle(COLORS.ink, 0.2).fillRoundedRect(-w / 2, -h / 2 + 6, w, h, 20);
-    g.fillStyle(playable ? COLORS.white : 0xeef1f5).fillRoundedRect(-w / 2, -h / 2, w, h, 20);
-    g.lineStyle(isNext ? 6 : 4, isNext ? COLORS.sun : COLORS.ink).strokeRoundedRect(
-      -w / 2,
-      -h / 2,
-      w,
-      h,
-      20,
-    );
+    g.fillStyle(COLORS.ink, 0.22).fillRoundedRect(-w / 2, -h / 2 + 8, w, h, 22);
+    if (playable) {
+      g.fillStyle(COLORS.white).fillRoundedRect(-w / 2, -h / 2, w, h, 22);
+      g.lineStyle(isNext ? 7 : 5, isNext ? COLORS.sun : COLORS.ink).strokeRoundedRect(
+        -w / 2,
+        -h / 2,
+        w,
+        h,
+        22,
+      );
+    } else {
+      // "Sorpresa": rayitas rosadas y borde punteado.
+      g.fillStyle(0xffe6ee).fillRoundedRect(-w / 2, -h / 2, w, h, 22);
+      g.lineStyle(10, 0xffd3e1, 1);
+      for (let k = -h; k < w; k += 28) {
+        g.lineBetween(-w / 2 + k + 12, h / 2 - 8, -w / 2 + k + h - 8, -h / 2 + 12);
+      }
+      g.lineStyle(4, 0x9aa5b8);
+      dashedRoundRect(g, -w / 2, -h / 2, w, h, 22);
+    }
     const parts: Phaser.GameObjects.GameObject[] = [g];
 
-    // Ficha de color con el ícono.
+    // Miniatura ilustrada del juego (escenita con fondo y dibujos relacionados).
+    const thumb = this.add
+      .image(0, -h / 2 + 62, gameIcon(this, a.id, a.icon))
+      .setDisplaySize(96, 92);
     const tile = this.add.graphics();
-    tile
-      .fillStyle(TILE_TINTS[i % TILE_TINTS.length] ?? 0xfff1c2)
-      .fillRoundedRect(-36, -h / 2 + 16, 72, 72, 16);
-    parts.push(tile);
-    const icon = fitImage(this.add.image(0, -h / 2 + 52, tex(a.icon)), 58, 58);
-    if (!playable) icon.setAlpha(0.45);
-    parts.push(icon);
-    parts.push(addBody(this, 0, 18, a.title, 18, { wrap: w - 20 }));
+    tile.lineStyle(3, COLORS.ink, 0.85).strokeRoundedRect(-48, -h / 2 + 16, 96, 92, 18);
+    parts.push(thumb, tile);
+    parts.push(addTitle(this, 0, 28, a.title, w < 270 ? 19 : 22, { wrap: w - 30 }));
 
     if (!playable) {
-      parts.push(addBody(this, 0, 58, 'Próximamente', 15, { color: '#5B6475' }));
+      parts.push(...this.tagPill(0, 68, '¡Sorpresa pronto!', COLORS.pink, '#2B2848'));
     } else if (isNext) {
-      parts.push(...this.playPill(0, 58));
+      parts.push(...this.playPill(0, 68));
     } else {
-      for (let s = 0; s < 3; s++) parts.push(addStarIcon(this, (s - 1) * 26, 58, 11, s < stars));
+      for (let s = 0; s < 3; s++) parts.push(addStarIcon(this, (s - 1) * 30, 68, 13, s < stars));
     }
 
-    const card = this.add.container(x, y, parts).setSize(w, h);
+    parts.push(...this.stepNumber(-w / 2 + 10, -h / 2 + 10, i + 1, done));
+    if (done) parts.push(...this.tagPill(w / 2 - 54, -h / 2 + 4, '✓ ¡Listo!', 0x3aa655, '#FFFFFF'));
+
+    const card = this.add.container(x, y, parts).setSize(w, h).setDepth(1);
     if (isNext) {
-      card.add(this.nextTab(0, -h / 2 - 2));
+      card.add(this.nextTab(w / 2 - 54, -h / 2 + 2));
       this.hintTarget = { x, y };
     }
     this.makeTappable(card, a, playable ? 'open' : 'soon', i);
+  }
+
+  /** Etiqueta redondeada de color (¡Listo!, ¡Sorpresa pronto!, motivo del candado…). */
+  private tagPill(
+    x: number,
+    y: number,
+    text: string,
+    fill: number,
+    color: string,
+  ): Phaser.GameObjects.GameObject[] {
+    const t = addBody(this, x, y, text, 15, { color });
+    const w = t.width + 22;
+    const g = this.add.graphics();
+    g.fillStyle(fill).fillRoundedRect(x - w / 2, y - 15, w, 30, 15);
+    g.lineStyle(3, COLORS.ink, fill === COLORS.white ? 0.35 : 1).strokeRoundedRect(
+      x - w / 2,
+      y - 15,
+      w,
+      30,
+      15,
+    );
+    return [g, t];
   }
 
   /** Botón "▶ Jugar" dentro de la tarjeta que toca. */
@@ -369,42 +552,27 @@ export default class RightHubScene extends Phaser.Scene {
     return tab;
   }
 
-  // ------------------------------------------------------------------ desafíos
+  // ------------------------------------------------------------------ retos
 
   private addChallenges(): void {
-    const r = this.right;
-    const head = this.add
-      .text(AREA_X, 400, 'Desafíos', {
-        fontFamily: FONTS.title,
-        fontSize: '30px',
-        fontStyle: '800',
-        color: CSS.ink,
-        stroke: CSS.white,
-        strokeThickness: 6,
-        resolution: TEXT_RESOLUTION,
-        padding: { top: 6 },
-      })
-      .setOrigin(0, 0.5);
-    const open = r.challenges.some((c) => isPlayable(c) && GameState.challengeUnlocked(r, c.id));
-    addBody(
-      this,
-      AREA_X + head.width + 14,
-      404,
-      open ? '¡Ya puedes jugarlos!' : 'Se abren al terminar los juegos',
-      16,
-      {
-        color: '#4A4F66',
-        stroke: CSS.white,
-        strokeThickness: 4,
-      },
-    ).setOrigin(0, 0.5);
-
-    const n = r.challenges.length;
-    const w = (AREA_W - (n - 1) * GAP) / n;
-    r.challenges.forEach((a, i) => {
-      const x = AREA_X + w / 2 + i * (w + GAP);
-      this.challengeCard(a, x, CHALL_Y, w, i);
-    });
+    const list = this.right.challenges;
+    const n = list.length;
+    const left = MEDAL.x + 120;
+    const span = PATH_RIGHT - left;
+    const w = Math.min(CHALL_W, (span - (n - 1) * 30) / n);
+    const gap = n > 1 ? (span - n * w) / (n - 1) : 0;
+    // Van de derecha a izquierda (el sendero regresa hacia la medalla).
+    const xs = list.map((_, i) => PATH_RIGHT - w / 2 - i * (w + gap));
+    if (gap >= 44) {
+      for (let i = 0; i < n - 1; i++) {
+        const a = xs[i];
+        const b = xs[i + 1];
+        if (a !== undefined && b !== undefined) this.arrow((a + b) / 2, ROW2_Y, 'left');
+      }
+    }
+    const offset = this.right.games.length;
+    list.forEach((a, i) => this.challengeCard(a, xs[i] ?? 640, ROW2_Y, w, i, offset + i + 1));
+    this.sectionPill((xs[0] ?? 1000) - w / 2 + 84, ROW2_Y - CHALL_H / 2 - 18, 'Retos');
   }
 
   private stateOf(a: Activity): CardState {
@@ -413,10 +581,10 @@ export default class RightHubScene extends Phaser.Scene {
     return a.medal && GameState.gamesDone(this.right) ? 'final-locked' : 'locked';
   }
 
-  /** Motivo del candado: "Falta 1 juego" / "Gana los 2 desafíos". */
+  /** Motivo del candado: "Falta 1 juego" / "Gana los 2 retos". */
   private lockReason(a: Activity, state: CardState): string {
     const r = this.right;
-    if (state === 'soon') return 'Próximamente';
+    if (state === 'soon') return '¡Muy pronto!';
     const missingGames = r.games.filter(
       (g) => isPlayable(g) && GameState.getActivityStars(r.id, g.id) === 0,
     ).length;
@@ -424,73 +592,84 @@ export default class RightHubScene extends Phaser.Scene {
       return missingGames === 1 ? 'Falta 1 juego' : `Faltan ${missingGames} juegos`;
     }
     const others = r.challenges.filter((c) => isPlayable(c) && c !== a).length;
-    return `Gana ${others === 1 ? 'el otro desafío' : `los ${others} desafíos`}`;
+    return `Gana ${others === 1 ? 'el otro reto' : `los ${others} retos`}`;
   }
 
-  private challengeCard(a: Activity, x: number, y: number, w: number, i: number): void {
+  private challengeCard(
+    a: Activity,
+    x: number,
+    y: number,
+    w: number,
+    i: number,
+    num: number,
+  ): void {
     const r = this.right;
     const h = CHALL_H;
     const state = this.stateOf(a);
     const open = state === 'open';
     const isNext = this.next === a;
+    const stars = isPlayable(a) ? GameState.getActivityStars(r.id, a.id) : 0;
     const g = this.add.graphics();
     const parts: Phaser.GameObjects.GameObject[] = [g];
 
+    g.fillStyle(COLORS.ink, 0.2).fillRoundedRect(-w / 2, -h / 2 + 7, w, h, 22);
     if (open) {
-      g.fillStyle(COLORS.ink, 0.2).fillRoundedRect(-w / 2, -h / 2 + 6, w, h, 20);
-      g.fillStyle(COLORS.white).fillRoundedRect(-w / 2, -h / 2, w, h, 20);
-      g.lineStyle(isNext ? 6 : 4, isNext ? COLORS.sun : COLORS.ink).strokeRoundedRect(
+      g.fillStyle(COLORS.white).fillRoundedRect(-w / 2, -h / 2, w, h, 22);
+      g.lineStyle(isNext ? 7 : 5, isNext ? COLORS.sun : COLORS.ink).strokeRoundedRect(
         -w / 2,
         -h / 2,
         w,
         h,
-        20,
+        22,
       );
-      const tile = this.add.graphics();
-      tile
-        .fillStyle(TILE_TINTS[(i + 2) % TILE_TINTS.length] ?? 0xdcefff)
-        .fillRoundedRect(-w / 2 + 14, -30, 60, 60, 14);
-      parts.push(tile, fitImage(this.add.image(-w / 2 + 44, 0, tex(a.icon)), 48, 48));
     } else {
-      g.fillStyle(0xe9eef5, 0.95).fillRoundedRect(-w / 2, -h / 2, w, h, 20);
-      g.lineStyle(3, 0x9aa5b8);
-      dashedRoundRect(g, -w / 2, -h / 2, w, h, 20);
-      parts.push(this.add.circle(-w / 2 + 44, 0, 26, COLORS.white).setStrokeStyle(3, 0x9aa5b8));
-      parts.push(addLockIcon(this, -w / 2 + 44, 2, 0.75));
+      g.fillStyle(0xeef1f6).fillRoundedRect(-w / 2, -h / 2, w, h, 22);
+      g.lineStyle(4, 0x9aa5b8);
+      dashedRoundRect(g, -w / 2, -h / 2, w, h, 22);
     }
 
-    const textX = -w / 2 + 88;
-    const title = this.add
-      .text(textX, open ? -16 : -12, a.title, {
-        fontFamily: FONTS.body,
-        fontSize: '19px',
-        fontStyle: '800',
-        color: CSS.ink,
-        resolution: TEXT_RESOLUTION,
-        wordWrap: { width: w - 100 },
-      })
-      .setOrigin(0, 0.5);
-    parts.push(title);
+    const tileX = -w / 2 + 50;
+    const icon = this.add.image(tileX, 0, gameIcon(this, a.id, a.icon)).setDisplaySize(78, 72);
+    const tile = this.add.graphics();
+    tile.lineStyle(3, COLORS.ink, 0.85).strokeRoundedRect(tileX - 39, -36, 78, 72, 14);
+    if (!open) icon.setAlpha(0.55);
+    parts.push(icon, tile);
+    if (!open) {
+      parts.push(this.add.circle(tileX + 30, 28, 17, COLORS.white).setStrokeStyle(3, COLORS.ink));
+      parts.push(addLockIcon(this, tileX + 30, 30, 0.42));
+    }
+
+    const textX = -w / 2 + 98;
+    parts.push(
+      this.add
+        .text(textX, -20, a.title, {
+          fontFamily: FONTS.title,
+          fontSize: '20px',
+          fontStyle: '800',
+          color: CSS.ink,
+          resolution: TEXT_RESOLUTION,
+          padding: { top: 4 },
+          wordWrap: { width: w - 106 },
+        })
+        .setOrigin(0, 0.5),
+    );
+    const midX = textX + (w / 2 - textX) / 2 - 4;
     if (open) {
-      if (isNext && isPlayable(a)) {
-        parts.push(...this.playPill(textX + 55, 20));
-      } else {
-        const s = GameState.getActivityStars(r.id, a.id);
+      if (isNext && isPlayable(a)) parts.push(...this.playPill(midX, 24));
+      else
         for (let k = 0; k < 3; k++)
-          parts.push(addStarIcon(this, textX + 12 + k * 26, 20, 11, k < s));
-      }
+          parts.push(addStarIcon(this, midX + (k - 1) * 26, 24, 11, k < stars));
     } else {
-      parts.push(
-        addBody(this, textX, 16, this.lockReason(a, state), 15, { color: '#5B6475' }).setOrigin(
-          0,
-          0.5,
-        ),
-      );
+      parts.push(...this.tagPill(midX, 24, this.lockReason(a, state), COLORS.white, '#4A4F66'));
     }
 
-    const card = this.add.container(x, y, parts).setSize(w, h);
+    parts.push(...this.stepNumber(-w / 2 + 8, -h / 2 + 8, num, stars > 0));
+    if (stars > 0)
+      parts.push(...this.tagPill(w / 2 - 50, -h / 2 + 2, '✓ ¡Listo!', 0x3aa655, '#FFFFFF'));
+
+    const card = this.add.container(x, y, parts).setSize(w, h).setDepth(1);
     if (isNext) {
-      card.add(this.nextTab(0, -h / 2 - 2));
+      card.add(this.nextTab(w / 2 - 54, -h / 2 + 2));
       this.hintTarget = { x, y };
     }
     this.makeTappable(card, a, state, i + 4);
@@ -556,19 +735,13 @@ export default class RightHubScene extends Phaser.Scene {
       (g) => isPlayable(g) && GameState.getActivityStars(r.id, g.id) > 0,
     );
     const next = this.next;
-    let text: string;
     if (pending.length > 0 && next) {
-      if (!doneAny) text = `¡Vamos a jugar! Toca ${next.title} para empezar.`;
-      else if (pending.length === 1)
-        text = `¡Muy bien! Te falta un juego: ${next.title}.${hasChallenges ? ' Cuando lo termines, se abren los desafíos.' : ''}`;
-      else text = `¡Vas muy bien! Te faltan ${pending.length} juegos. Sigue con ${next.title}.`;
-    } else if (next) {
-      text = `¡Se abrieron los desafíos! Toca ${next.title} para jugar.`;
-    } else if (GameState.hasRightMedal(r)) {
-      text = `¡Completaste este derecho! Ganaste la medalla ${r.medal.name}.`;
-    } else {
-      text = '¡Completaste todos los juegos de este derecho! Muy pronto habrá más.';
+      if (!doneAny) return hubStatus.start(r, next.title);
+      if (pending.length === 1) return hubStatus.oneLeft(r, next.title, hasChallenges);
+      return hubStatus.many(r, pending.length, next.title);
     }
-    return { id: `hub_status_${r.id}`, text };
+    if (next) return hubStatus.challenges(r, next.title);
+    if (GameState.hasRightMedal(r)) return hubStatus.medal(r);
+    return hubStatus.allDone(r);
   }
 }

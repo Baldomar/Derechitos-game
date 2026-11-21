@@ -14,7 +14,7 @@ export interface BigButtonOptions {
   /** Late suavemente para llamar la atención (p. ej. "¡Jugar!"). */
   pulse?: boolean;
   /** Ícono circular a la izquierda del texto (p. ej. "play" en "¡Jugar!"). */
-  icon?: 'play' | 'medal' | 'diploma';
+  icon?: 'play' | 'medal' | 'diploma' | 'print';
   /** Color del texto (por defecto, tinta). */
   textColor?: string;
 }
@@ -101,6 +101,22 @@ export class BigButton extends Phaser.GameObjects.Container {
               g.fillStyle(COLORS.sun).fillCircle(c, cy, r);
               g.lineStyle(4, COLORS.ink).strokeCircle(c, cy, r);
               g.fillStyle(COLORS.white, 0.8).fillCircle(c, cy, r * 0.42);
+            })
+          : opts.icon === 'print'
+          ? bakedTexture(scene, `btn-icon-print-${d}`, d + 4, d + 4, (g) => {
+              // Impresora: hoja arriba, cuerpo con botón y hoja impresa saliendo abajo.
+              const c = (d + 4) / 2;
+              const w = d * 0.84;
+              g.fillStyle(COLORS.white).fillRect(c - w * 0.3, d * 0.08, w * 0.6, d * 0.3);
+              g.lineStyle(3, COLORS.ink).strokeRect(c - w * 0.3, d * 0.08, w * 0.6, d * 0.3);
+              g.fillStyle(COLORS.sun).fillRoundedRect(c - w / 2, d * 0.32, w, d * 0.4, 6);
+              g.lineStyle(3.5, COLORS.ink).strokeRoundedRect(c - w / 2, d * 0.32, w, d * 0.4, 6);
+              g.fillStyle(COLORS.ink).fillCircle(c + w * 0.32, d * 0.44, 3);
+              g.fillStyle(COLORS.white).fillRect(c - w * 0.3, d * 0.6, w * 0.6, d * 0.32);
+              g.lineStyle(3, COLORS.ink).strokeRect(c - w * 0.3, d * 0.6, w * 0.6, d * 0.32);
+              g.lineStyle(2, COLORS.ink, 0.6);
+              g.lineBetween(c - w * 0.2, d * 0.72, c + w * 0.2, d * 0.72);
+              g.lineBetween(c - w * 0.2, d * 0.82, c + w * 0.12, d * 0.82);
             })
           : bakedTexture(scene, `btn-icon-diploma-${d}`, d + 4, d + 4, (g) => {
               // Diploma enrollado: hoja con renglones, rollos a los lados y sello rojo.

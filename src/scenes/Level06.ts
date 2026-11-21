@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '@/config/theme';
 import type { DayNightContent } from '@/config/levels';
 import { artImage, type ArtKey } from '@/art/Art';
+import { addSun } from '@/components/Sun';
 import { DraggableItem, type DropDecision } from '@/components/DraggableItem';
 import { DropZone } from '@/components/DropZone';
 import type { HintTarget } from '@/components/HelperHand';
@@ -31,7 +32,7 @@ export default class Level06Scene extends BaseLevel {
   ];
   private c!: DayNightContent;
   private night!: Phaser.GameObjects.Rectangle;
-  private sun!: Phaser.GameObjects.Image;
+  private sun!: Phaser.GameObjects.Container;
   private moon!: Phaser.GameObjects.Image;
   private zones = new Map<'day' | 'night', DropZone>();
   private items: DraggableItem[] = [];
@@ -54,9 +55,8 @@ export default class Level06Scene extends BaseLevel {
       .rectangle(-4000, -4000, GAME_WIDTH + 8000, GAME_HEIGHT + 8000, 0x1b1f4a, 0)
       .setOrigin(0)
       .setDepth(0.5);
-    this.sun = artImage(this, 640, 200, 'sol').setDepth(1);
+    this.sun = addSun(this, 640, 200).setDepth(1);
     this.moon = artImage(this, 640, 820, 'luna-grande').setDepth(1);
-    this.tweens.add({ targets: this.sun, angle: 360, duration: 24000, repeat: -1 });
 
     this.c.items.forEach((def, i) => {
       const img = artImage(this, 0, -8, def.art);

@@ -5,6 +5,7 @@ import { pickPraise } from '@/config/phrases';
 import { ensureArt, type ArtKey } from '@/art/Art';
 import { addBackdrop, type BackdropOptions } from '@/components/Backdrop';
 import { PillButton } from '@/components/PillButton';
+import { viewportMargin } from '@/core/Viewport';
 import { Effects } from '@/components/Effects';
 import { IdleHint, type HintTarget } from '@/components/HelperHand';
 import { SpeechBubble } from '@/components/SpeechBubble';
@@ -19,7 +20,7 @@ import { vibrate } from '@/core/Device';
  * Aplica las reglas pedagógicas en un solo lugar:
  * - Acierto: sonido alegre + destellos + palomita + vibración + Tori feliz + elogio variado.
  * - Error amable: sin castigo; sonido suave, Tori inclina la cabeza y da una pista concreta.
- * - Ayuda automática: tras 8 s sin interacción, la manita señala qué hacer y Tori repite la instrucción.
+ * - Ayuda automática: tras 5 s sin interacción, la manita señala qué hacer y Tori repite la instrucción.
  * - Nunca hay vidas, cronómetro ni "perdiste". Los errores solo ajustan las estrellas (3/2/1).
  */
 export abstract class GameplayScene extends Phaser.Scene {
@@ -64,12 +65,23 @@ export abstract class GameplayScene extends Phaser.Scene {
     }).setDepth(DEPTH.ui);
 
     const back = this.backButton();
-    new PillButton(this, 104, 58, {
+    const backBtn = new PillButton(this, 0, 0, {
       label: back.label,
       icon: 'back',
       width: 156,
       onClick: back.go,
     }).setDepth(DEPTH.ui);
+    // Pegado a la esquina superior izquierda visible (usa el margen extra de pantallas anchas),
+    // para que no quede encima del contenido del juego.
+    const placeBack = (): void => {
+      const m = viewportMargin(this.game);
+      backBtn.setPosition(90 - m.x, 42 - Math.min(m.y, 20));
+    };
+    placeBack();
+    this.scale.on(Phaser.Scale.Events.RESIZE, placeBack);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+      this.scale.off(Phaser.Scale.Events.RESIZE, placeBack),
+    );
 
     this.onCreateExtra();
 
@@ -104,7 +116,7 @@ export abstract class GameplayScene extends Phaser.Scene {
     return null;
   }
 
-  /** Activa la ayuda automática de 8 s. */
+  /** Activa la ayuda automática de 5 s. */
   protected enableIdleHint(): void {
     if (this.idle) return;
     this.idle = new IdleHint(this, () => this.getHint(), {

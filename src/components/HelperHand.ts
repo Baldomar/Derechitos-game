@@ -43,18 +43,18 @@ export class HelperHand extends Phaser.GameObjects.Container {
         this.hand.setPosition(50, 60);
         this.chain = t.chain({
           tweens: [
-            { targets: this, alpha: 1, duration: motion(200) },
-            { targets: this.hand, x: 0, y: 0, duration: motion(400), ease: 'Cubic.easeOut' },
+            { targets: this, alpha: 1, duration: motion(140) },
+            { targets: this.hand, x: 0, y: 0, duration: motion(260), ease: 'Cubic.easeOut' },
             {
               targets: this.hand,
               scale: 0.85,
-              duration: motion(150),
+              duration: motion(110),
               yoyo: true,
               repeat: 2,
-              repeatDelay: 350,
+              repeatDelay: 220,
               onYoyo: () => this.ripple(),
             },
-            { targets: this, alpha: 0, delay: 200, duration: motion(250) },
+            { targets: this, alpha: 0, delay: 120, duration: motion(200) },
           ],
           onComplete: () => this.finish(),
         });
@@ -64,16 +64,16 @@ export class HelperHand extends Phaser.GameObjects.Container {
         this.chain = t.chain({
           loop: 1,
           tweens: [
-            { targets: this, x: from.x, y: from.y, alpha: 1, duration: motion(250) },
+            { targets: this, x: from.x, y: from.y, alpha: 1, duration: motion(160) },
             {
               targets: this.hand,
               scale: 0.85,
-              duration: motion(150),
+              duration: motion(110),
               onComplete: () => this.ripple(),
             },
-            { targets: this, x: to.x, y: to.y, duration: motion(900), ease: 'Sine.easeInOut' },
-            { targets: this.hand, scale: 1, duration: motion(150) },
-            { targets: this, alpha: 0, delay: 150, duration: motion(250) },
+            { targets: this, x: to.x, y: to.y, duration: motion(620), ease: 'Sine.easeInOut' },
+            { targets: this.hand, scale: 1, duration: motion(110) },
+            { targets: this, alpha: 0, delay: 100, duration: motion(200) },
           ],
           onComplete: () => this.finish(),
         });
@@ -104,7 +104,7 @@ export class HelperHand extends Phaser.GameObjects.Container {
 }
 
 /**
- * Ayuda automática: si no hay interacción en 8 s, muestra la manita sobre lo que hay que hacer.
+ * Ayuda automática: si no hay interacción en 5 s, muestra la manita sobre lo que hay que hacer.
  * Cualquier toque reinicia la cuenta. Se limpia sola al salir de la escena.
  */
 export class IdleHint {
@@ -124,7 +124,7 @@ export class IdleHint {
     this.scene = scene;
     this.getTarget = getTarget;
     this.onHint = opts.onHint;
-    this.delay = opts.delay ?? 8000;
+    this.delay = opts.delay ?? 5000;
     this.hand = new HelperHand(scene);
     scene.input.on(Phaser.Input.Events.POINTER_DOWN, this.reset, this);
     scene.input.on(Phaser.Input.Events.POINTER_UP, this.reset, this);

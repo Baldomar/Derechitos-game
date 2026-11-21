@@ -33,7 +33,7 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
   private readonly waves: Phaser.GameObjects.Graphics;
   private readonly bubbleWidth: number;
   private readonly tailSide: 'left' | 'right' | 'none';
-  private readonly tori: Tori | null;
+  private tori: Tori | null;
   /** Medidas según el tamaño del globo (normal o compacto). */
   private readonly pad: number;
   private readonly btn: number;
@@ -44,6 +44,8 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
   private token = 0;
   private alive = true;
   private wavesTween: Phaser.Tweens.Tween | null = null;
+  /** Color del borde: oscuro (normal), verde (acierto) o naranja (pista). */
+  private edge: number = COLORS.ink;
 
   constructor(scene: Phaser.Scene, x: number, y: number, opts: SpeechBubbleOptions = {}) {
     super(scene, x, y);
@@ -146,6 +148,13 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
     return c;
   }
 
+  /** Tono del mensaje: cambia el color del borde del globo. */
+  setTone(tone: 'normal' | 'good' | 'oops'): this {
+    this.edge = tone === 'good' ? 0x3aa655 : tone === 'oops' ? COLORS.orange : COLORS.ink;
+    this.layout();
+    return this;
+  }
+
   private layout(): number {
     const w = this.bubbleWidth;
     const headH = this.heading ? this.heading.height - 2 : 0;
@@ -163,7 +172,7 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
     g.clear();
     g.fillStyle(COLORS.ink, 0.2).fillRoundedRect(-w / 2, -h / 2 + 8, w, h, rr);
     g.fillStyle(COLORS.white).fillRoundedRect(-w / 2, -h / 2, w, h, rr);
-    g.lineStyle(5, COLORS.ink).strokeRoundedRect(-w / 2, -h / 2, w, h, rr);
+    g.lineStyle(5, this.edge).strokeRoundedRect(-w / 2, -h / 2, w, h, rr);
 
     if (this.tailSide !== 'none') {
       const s = this.tailSide === 'left' ? -1 : 1;
@@ -172,7 +181,7 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
       const bottom = { x: edge - s * 6, y: h / 2 - 16 };
       const tip = { x: edge + s * 46, y: h / 2 + 22 };
       g.fillStyle(COLORS.white).fillTriangle(top.x, top.y, bottom.x, bottom.y, tip.x, tip.y);
-      g.lineStyle(5, COLORS.ink)
+      g.lineStyle(5, this.edge)
         .lineBetween(edge, top.y + 2, tip.x, tip.y)
         .lineBetween(edge, bottom.y + 1, tip.x, tip.y);
     }
@@ -242,6 +251,12 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
       this.stopTalkingFx();
       if (i < lines.length - 1) await new Promise((r) => window.setTimeout(r, 250));
     }
+  }
+
+  /** Cambia el Tori que mueve el pico mientras se lee el globo. */
+  setTori(tori: Tori | null): this {
+    this.tori = tori;
+    return this;
   }
 
   /** Repite lo último que dijo Tori (botón 🔊). */

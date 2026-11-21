@@ -6,7 +6,10 @@ export const GAME_HEIGHT = 720;
 export const MIN_TOUCH = 88;
 
 /** Resolución de textos: nítidos en pantallas densas sin gastar memoria de más. */
-export const TEXT_RESOLUTION = Math.min(window.devicePixelRatio || 1, 2);
+export const TEXT_RESOLUTION = Math.min(
+  (typeof window !== 'undefined' && window.devicePixelRatio) || 1,
+  2,
+);
 
 /** Paleta oficial (números para Phaser). */
 export const COLORS = {

@@ -4,7 +4,7 @@ import { AudioManager } from '@/core/AudioManager';
 import { bakedTexture } from '@/core/Bake';
 import { motion } from '@/core/Device';
 
-export type PillIcon = 'home' | 'medal' | 'back';
+export type PillIcon = 'home' | 'medal' | 'back' | 'play';
 
 export interface PillButtonOptions {
   label: string;
@@ -15,6 +15,8 @@ export interface PillButtonOptions {
   fontSize?: number;
   /** Color del texto (por defecto, tinta). */
   textColor?: string;
+  /** Alto visible (por defecto 60 px; el área táctil siempre es de al menos 88 px). */
+  height?: number;
 }
 
 const H = 60;
@@ -28,6 +30,11 @@ function drawIcon(g: Phaser.GameObjects.Graphics, icon: PillIcon): void {
     g.lineTo(-5, 0);
     g.lineTo(5, 10);
     g.strokePath();
+    return;
+  }
+  if (icon === 'play') {
+    g.fillStyle(ink).fillCircle(0, 0, 14);
+    g.fillStyle(COLORS.white).fillTriangle(-4, -7, -4, 7, 7, 0);
     return;
   }
   if (icon === 'home') {
@@ -56,10 +63,11 @@ export class PillButton extends Phaser.GameObjects.Container {
     super(scene, x, y);
     const w = opts.width ?? 160;
     const color = opts.color ?? COLORS.white;
-    const key = bakedTexture(scene, `pill-${w}-${color.toString(16)}`, w + 8, H + 12, (g) => {
-      g.fillStyle(COLORS.ink, 0.25).fillRoundedRect(4, 9, w, H, H / 2);
-      g.fillStyle(color).fillRoundedRect(4, 4, w, H, H / 2);
-      g.lineStyle(4, COLORS.ink).strokeRoundedRect(4, 4, w, H, H / 2);
+    const h = opts.height ?? H;
+    const key = bakedTexture(scene, `pill-${w}x${h}-${color.toString(16)}`, w + 8, h + 12, (g) => {
+      g.fillStyle(COLORS.ink, 0.25).fillRoundedRect(4, 9, w, h, h / 2);
+      g.fillStyle(color).fillRoundedRect(4, 4, w, h, h / 2);
+      g.lineStyle(4, COLORS.ink).strokeRoundedRect(4, 4, w, h, h / 2);
     });
     const bg = scene.add.image(0, 3, key);
     const parts: Phaser.GameObjects.GameObject[] = [bg];

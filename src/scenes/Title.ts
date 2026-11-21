@@ -7,7 +7,7 @@ import { BigButton } from '@/components/BigButton';
 import { IdleHint } from '@/components/HelperHand';
 import { addBody } from '@/components/Text';
 import { Tori } from '@/components/Tori';
-import { AudioManager } from '@/core/AudioManager';
+import { AUDIO_EVENTS, AudioManager } from '@/core/AudioManager';
 import { bakedTexture } from '@/core/Bake';
 import { enterImmersive, motion, prefersReducedMotion } from '@/core/Device';
 import { GameState } from '@/core/GameState';
@@ -89,6 +89,7 @@ export default class TitleScene extends Phaser.Scene {
 
     AudioManager.playMusic();
     this.time.delayedCall(1300, () => void this.say(TITLE_HELLO));
+    if (!AudioManager.unlocked) this.waitForSound();
     this.time.addEvent({ delay: 7000, loop: true, callback: () => this.tori.wave() });
 
     addBody(this, GAME_WIDTH - 14, 708, 'v1.1', 16)
@@ -138,8 +139,15 @@ export default class TitleScene extends Phaser.Scene {
       // Matitas
       g.lineStyle(3, 0x4f9e3c);
       for (const [x, y] of [
-        [390, 690], [560, 680], [760, 700], [930, 690], [1140, 705], [1300, 688], [-60, 700],
-        [700, 668], [1500, 690],
+        [390, 690],
+        [560, 680],
+        [760, 700],
+        [930, 690],
+        [1140, 705],
+        [1300, 688],
+        [-60, 700],
+        [700, 668],
+        [1500, 690],
       ] as const) {
         g.lineBetween(x + o - 7, y - 8, x + o - 3, y + 4);
         g.lineBetween(x + o - 3, y + 4, x + o + 2, y - 11);
@@ -247,8 +255,15 @@ export default class TitleScene extends Phaser.Scene {
 
       // Tronco (a su izquierda se ve el cielo, como en el dibujo)
       const trunk = [
-        P(26, 200), P(122, 200), P(118, 420), P(126, 560), P(146, 660), P(196, 730),
-        P(14, 730), P(30, 600), P(22, 420),
+        P(26, 200),
+        P(122, 200),
+        P(118, 420),
+        P(126, 560),
+        P(146, 660),
+        P(196, 730),
+        P(14, 730),
+        P(30, 600),
+        P(22, 420),
       ];
       g.fillStyle(bark).fillPoints(trunk, true);
       g.lineStyle(6, COLORS.ink).strokePoints(trunk, true);
@@ -332,7 +347,14 @@ export default class TitleScene extends Phaser.Scene {
       // Rayitas de hojas
       g.lineStyle(3, 0x2f8a3a);
       for (const [x, y] of [
-        [10, 90], [130, 100], [230, 100], [290, 0], [150, 0], [40, -10], [-80, 60], [70, 190],
+        [10, 90],
+        [130, 100],
+        [230, 100],
+        [290, 0],
+        [150, 0],
+        [40, -10],
+        [-80, 60],
+        [70, 190],
       ] as const) {
         g.beginPath();
         g.arc(x + ox, y + oy, 14, Math.PI * 0.2, Math.PI * 0.8);
@@ -340,7 +362,11 @@ export default class TitleScene extends Phaser.Scene {
       }
       // Florecitas rosadas
       for (const [x, y] of [
-        [40, 120], [150, 120], [255, 125], [300, 50], [-40, 60],
+        [40, 120],
+        [150, 120],
+        [255, 125],
+        [300, 50],
+        [-40, 60],
       ] as const) {
         g.fillStyle(COLORS.pink).fillCircle(x + ox, y + oy, 6.5);
         g.lineStyle(2.5, COLORS.ink).strokeCircle(x + ox, y + oy, 6.5);
@@ -418,7 +444,13 @@ export default class TitleScene extends Phaser.Scene {
       lobes.forEach(([x, y, r]) => g.fillCircle(x, y, r));
       g.fillStyle(0x68c35a).fillCircle(66, 54, 32);
       for (const [x, y] of [
-        [52, 52], [96, 44], [80, 84], [34, 100], [116, 98], [104, 74], [60, 110],
+        [52, 52],
+        [96, 44],
+        [80, 84],
+        [34, 100],
+        [116, 98],
+        [104, 74],
+        [60, 110],
       ] as const) {
         g.fillStyle(COLORS.orange).fillCircle(x, y, 7);
         g.lineStyle(2.5, COLORS.ink).strokeCircle(x, y, 7);
@@ -535,6 +567,68 @@ export default class TitleScene extends Phaser.Scene {
     this.bubble.setSize(w, h + 30);
   }
 
+  /**
+   * Los navegadores no dejan sonar nada hasta el primer toque. Mientras tanto se muestra
+   * "Toca para escuchar"; con el primer toque arranca la canción y Tori saluda con su voz.
+   */
+  private waitForSound(): void {
+    const icon = this.add.graphics();
+    icon.fillStyle(COLORS.white).fillRect(-10, -6, 8, 12).fillTriangle(-2, -6, 8, -14, 8, 14);
+    icon.fillTriangle(-2, 6, 8, -14, 8, 14);
+    icon.lineStyle(3, COLORS.white);
+    icon.beginPath();
+    icon.arc(10, 0, 9, -0.9, 0.9);
+    icon.strokePath();
+    icon.beginPath();
+    icon.arc(10, 0, 16, -0.9, 0.9);
+    icon.strokePath();
+    const label = this.add
+      .text(16, 2, 'Toca para escuchar', {
+        fontFamily: FONTS.title,
+        fontSize: '26px',
+        fontStyle: '800',
+        color: CSS.white,
+        resolution: TEXT_RESOLUTION,
+        padding: { top: 4 },
+      })
+      .setOrigin(0, 0.5);
+    const w = label.width + 92;
+    const bg = this.add.graphics();
+    bg.fillStyle(COLORS.ink, 0.25).fillRoundedRect(-w / 2, -24, w, 56, 28);
+    bg.fillStyle(COLORS.turquoise).fillRoundedRect(-w / 2, -28, w, 56, 28);
+    bg.lineStyle(4, COLORS.ink).strokeRoundedRect(-w / 2, -28, w, 56, 28);
+    icon.setPosition(-w / 2 + 34, 0);
+    label.setX(-w / 2 + 72);
+    const prompt = this.add.container(LOGO_X, 540, [bg, icon, label]).setDepth(20);
+    if (!prefersReducedMotion()) {
+      this.tweens.add({
+        targets: prompt,
+        scale: 1.06,
+        duration: 600,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+    const onUnlock = (): void => {
+      if (!this.scene.isActive()) return;
+      this.tweens.killTweensOf(prompt);
+      this.tweens.add({
+        targets: prompt,
+        scale: 0,
+        alpha: 0,
+        duration: motion(250),
+        onComplete: () => prompt.destroy(),
+      });
+      // Ahora sí se escucha: Tori repite su saludo con voz.
+      this.time.delayedCall(300, () => void this.say(TITLE_HELLO));
+    };
+    AudioManager.once(AUDIO_EVENTS.UNLOCKED, onUnlock);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+      AudioManager.off(AUDIO_EVENTS.UNLOCKED, onUnlock),
+    );
+  }
+
   /** Tori dice una frase: el globo aparece con un "pop" y su pico se mueve al hablar. */
   private async say(line: VoiceLine): Promise<void> {
     const token = ++this.sayToken;
@@ -632,7 +726,10 @@ export default class TitleScene extends Phaser.Scene {
         [1090, 120],
       ] as const
     ).forEach(([x, y], i) => {
-      const s = this.add.image(x, y, key).setScale(0).setTint(i % 2 ? 0xfff3b0 : COLORS.white);
+      const s = this.add
+        .image(x, y, key)
+        .setScale(0)
+        .setTint(i % 2 ? 0xfff3b0 : COLORS.white);
       this.tweens.add({
         targets: s,
         scale: { from: 0, to: 0.9 },

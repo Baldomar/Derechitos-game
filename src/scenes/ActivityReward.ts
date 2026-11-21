@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import { COLORS, GAME_WIDTH } from '@/config/theme';
 import { findActivity, getRightArea, type PlayableActivity, type RightArea } from '@/config/rights';
-import { CHALLENGES_OPEN } from '@/config/phrases';
+import { CHALLENGES_OPEN, REWARD_CONTINUE } from '@/config/phrases';
 import { getLevelByScene, type VoiceLine } from '@/config/levels';
-import { ensureArt, tex } from '@/art/Art';
+import { ensureArt } from '@/art/Art';
+import { gameIcon } from '@/art/GameIcons';
 import { addBackdrop } from '@/components/Backdrop';
 import { addRightMedal } from '@/components/Badges';
 import { BigButton } from '@/components/BigButton';
@@ -18,7 +19,6 @@ import { motion, vibrate } from '@/core/Device';
 import { GameState, type ActivityResult } from '@/core/GameState';
 import { goTo } from '@/core/SceneTransition';
 import { TEX } from '@/core/Textures';
-import { fitImage } from './BaseActivity';
 
 const PRAISE: Record<number, string> = { 3: '¡Increíble!', 2: '¡Muy bien!', 1: '¡Lo lograste!' };
 const SLOTS = [
@@ -113,7 +113,9 @@ export default class ActivityRewardScene extends Phaser.Scene {
       g.lineStyle(7, this.right.color).strokeRoundedRect(-110, -95, 220, 190, 26);
       card.add([
         g,
-        fitImage(this.add.image(0, -18, tex(this.activity.icon)), 140, 110),
+        this.add
+          .image(0, -22, gameIcon(this, this.activity.id, this.activity.icon))
+          .setDisplaySize(160, 147),
         addBody(this, 0, 64, this.activity.title, 20, { wrap: 200 }),
       ]);
       card.add(this.add.image(92, -78, TEX.check).setScale(0.6));
@@ -127,14 +129,12 @@ export default class ActivityRewardScene extends Phaser.Scene {
       });
     }
     if (r.challengesUnlocked) lines.push(CHALLENGES_OPEN);
-    if (lines.length) {
-      this.time.delayedCall(starsDone + 900, () => {
-        tori.setMood('celebrate');
-        void bubble.say(lines);
-      });
-    } else {
-      this.time.delayedCall(starsDone + 400, () => tori.setMood('happy'));
-    }
+    // Siempre cierra indicando cómo seguir.
+    lines.push(REWARD_CONTINUE);
+    this.time.delayedCall(starsDone + 900, () => {
+      tori.setMood('celebrate');
+      void bubble.say(lines);
+    });
 
     const next = new BigButton(this, GAME_WIDTH - 170, 630, {
       label: 'Continuar',

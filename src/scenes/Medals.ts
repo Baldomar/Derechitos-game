@@ -1,10 +1,17 @@
 import Phaser from 'phaser';
-import { COLORS, CSS, DEPTH, FONTS, GAME_HEIGHT, GAME_WIDTH, TEXT_RESOLUTION } from '@/config/theme';
+import {
+  COLORS,
+  CSS,
+  DEPTH,
+  FONTS,
+  GAME_HEIGHT,
+  GAME_WIDTH,
+  TEXT_RESOLUTION,
+} from '@/config/theme';
 import { RIGHT_AREAS, type RightArea } from '@/config/rights';
 import type { VoiceLine } from '@/config/levels';
 import { MEDALS_HELLO } from '@/config/phrases';
 import { ensureArt, tex } from '@/art/Art';
-import { BigButton } from '@/components/BigButton';
 import { addStarIcon } from '@/components/Icons';
 import { PillButton } from '@/components/PillButton';
 import { SpeechBubble } from '@/components/SpeechBubble';
@@ -16,6 +23,7 @@ import { motion, prefersReducedMotion, vibrate } from '@/core/Device';
 import { GameState } from '@/core/GameState';
 import { setPageBackground } from '@/core/PageBackground';
 import { goTo } from '@/core/SceneTransition';
+import { medalLockedLine, medalsStatusLine } from '@/config/voiceCatalog';
 
 const PAD = 320;
 const SEA_EDGE = 0x1a7ec2;
@@ -32,10 +40,7 @@ const COLS = [303, 528, 752, 976];
 const ROWS = [150, 372]; // altura del clavito de cada fila
 
 /** Lectura simple de una zona bloqueada (también para lectores de pantalla). */
-const lockedLine = (r: RightArea, i: number): VoiceLine => ({
-  id: `medal_locked_${r.id}`,
-  text: `Medalla de ${r.short}: todavía no la tienes. Juega la zona ${i + 1} para ganarla.`,
-});
+const lockedLine = (r: RightArea, i: number): VoiceLine => medalLockedLine(r, i);
 
 /**
  * "Mis medallas": una vitrina con las 8 medallas de la isla colgadas de clavitos.
@@ -65,15 +70,7 @@ export default class MedalsScene extends Phaser.Scene {
     this.setupScreenReader();
 
     const first = earned[0];
-    const hello: VoiceLine = first
-      ? {
-          id: `medals_status_${earned.length}`,
-          text:
-            earned.length === RIGHT_AREAS.length
-              ? '¡Tienes todas las medallas! Eres Guardián de los Derechos.'
-              : `¡Ganaste la medalla ${first.medal.name}! Juega las otras zonas para completar tu colección.`,
-        }
-      : MEDALS_HELLO;
+    const hello: VoiceLine = first ? medalsStatusLine(earned.length, first) : MEDALS_HELLO;
     this.time.delayedCall(450, () => void this.say(hello));
   }
 
@@ -114,14 +111,25 @@ export default class MedalsScene extends Phaser.Scene {
     const sparkleKey = bakedTexture(this, 'map-sparkle', 20, 20, (g) => {
       g.fillStyle(COLORS.white).fillPoints(
         [
-          [10, 0], [12.5, 7.5], [20, 10], [12.5, 12.5], [10, 20], [7.5, 12.5], [0, 10], [7.5, 7.5],
+          [10, 0],
+          [12.5, 7.5],
+          [20, 10],
+          [12.5, 12.5],
+          [10, 20],
+          [7.5, 12.5],
+          [0, 10],
+          [7.5, 7.5],
         ].map(([x, y]) => new Phaser.Geom.Point(x ?? 0, y ?? 0)),
         true,
       );
     });
     (
       [
-        [90, 208], [70, 428], [1198, 228], [1180, 480], [140, 560],
+        [90, 208],
+        [70, 428],
+        [1198, 228],
+        [1180, 480],
+        [140, 560],
       ] as const
     ).forEach(([x, y], i) => {
       const s = this.add.image(x, y, sparkleKey);
@@ -328,7 +336,9 @@ export default class MedalsScene extends Phaser.Scene {
     const plate = this.add.graphics();
     plate.fillStyle(COLORS.ink, 0.35).fillRoundedRect(-pw / 2, -ph / 2 + 4, pw, ph, 8);
     plate.fillStyle(won ? GOLD_DARK : 0x343a49).fillRoundedRect(-pw / 2, -ph / 2, pw, ph, 8);
-    plate.fillStyle(won ? GOLD : PLATE_DARK).fillRoundedRect(-pw / 2 + 2, -ph / 2 + 2, pw - 4, ph - 6, 7);
+    plate
+      .fillStyle(won ? GOLD : PLATE_DARK)
+      .fillRoundedRect(-pw / 2 + 2, -ph / 2 + 2, pw - 4, ph - 6, 7);
     plate.lineStyle(3, COLORS.ink).strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 8);
     this.add.container(nx, ny + medalY + R + 36, [plate, label]);
 
@@ -357,10 +367,7 @@ export default class MedalsScene extends Phaser.Scene {
 
     // Toque: la medalla se balancea y Tori la nombra.
     c.setSize(120, 160);
-    c.setInteractive(
-      new Phaser.Geom.Rectangle(0, 20, 120, 160),
-      Phaser.Geom.Rectangle.Contains,
-    );
+    c.setInteractive(new Phaser.Geom.Rectangle(0, 20, 120, 160), Phaser.Geom.Rectangle.Contains);
     if (c.input) c.input.cursor = 'pointer';
     c.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
       AudioManager.sfx(won ? 'star' : 'pop');
@@ -455,55 +462,20 @@ export default class MedalsScene extends Phaser.Scene {
     const bar = this.add.graphics();
     bar.fillStyle(0xe4e8ef).fillRoundedRect(tx, 10, barW, 14, 7);
     if (count > 0)
-      bar.fillStyle(COLORS.sun).fillRoundedRect(tx, 10, Math.max(14, (barW * count) / total), 14, 7);
+      bar
+        .fillStyle(COLORS.sun)
+        .fillRoundedRect(tx, 10, Math.max(14, (barW * count) / total), 14, 7);
     bar.lineStyle(3, COLORS.ink).strokeRoundedRect(tx, 10, barW, 14, 7);
     card.add([bg, mini, num, of, bar]);
-
-    // "Mi diploma": se abre con la primera medalla.
-    const open = count > 0;
-    const btn = new BigButton(this, 1126, 660, {
-      label: 'Mi diploma',
-      icon: 'diploma',
-      width: 244,
-      height: 88,
-      fontSize: 30,
-      color: COLORS.sun,
-      pulse: open,
-      onClick: () => {
-        if (open) {
-          void goTo(this, 'Final');
-          return;
-        }
-        this.tweens.add({ targets: btn, x: btn.x + 8, duration: 60, yoyo: true, repeat: 3 });
-        void this.say({
-          id: 'medals_diploma_locked',
-          text: 'Gana tu primera medalla para ver tu diploma.',
-        });
-      },
-    }).setDepth(DEPTH.ui);
-    if (!open) btn.setAlpha(0.85);
-
-    // Etiqueta oscura "🔒 1/8" (sin candado cuando el diploma ya se puede ver).
-    const tag = this.add.container(1214, 622).setDepth(DEPTH.ui + 1);
-    const tagText = this.text(open ? 0 : 8, 0, `${count}/${total}`, 16, CSS.white);
-    const tw = tagText.width + (open ? 24 : 40);
-    const tg = this.add.graphics();
-    tg.fillStyle(COLORS.ink).fillRoundedRect(-tw / 2, -14, tw, 28, 14);
-    tg.lineStyle(2.5, COLORS.white).strokeRoundedRect(-tw / 2 + 1, -13, tw - 2, 26, 13);
-    tag.add([tg, tagText]);
-    if (!open) {
-      const lk = this.add.graphics();
-      const lx = -tw / 2 + 15;
-      lk.lineStyle(2.5, COLORS.white);
-      lk.beginPath();
-      lk.arc(lx, -2, 4, Math.PI, 0);
-      lk.strokePath();
-      lk.fillStyle(COLORS.white).fillRoundedRect(lx - 5.5, -2, 11, 9, 2);
-      tag.add(lk);
-    }
   }
 
-  private text(x: number, y: number, s: string, size: number, color: string): Phaser.GameObjects.Text {
+  private text(
+    x: number,
+    y: number,
+    s: string,
+    size: number,
+    color: string,
+  ): Phaser.GameObjects.Text {
     return this.add
       .text(x, y, s, {
         fontFamily: FONTS.title,

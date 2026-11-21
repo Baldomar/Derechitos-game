@@ -2,10 +2,12 @@ import Phaser from 'phaser';
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '@/config/theme';
 import type { HouseContent } from '@/config/levels';
 import { artImage, tex, type ArtKey } from '@/art/Art';
+import { addSun } from '@/components/Sun';
 import { DraggableItem, type DropDecision } from '@/components/DraggableItem';
 import { DropZone } from '@/components/DropZone';
 import type { HintTarget } from '@/components/HelperHand';
 import { addBody } from '@/components/Text';
+import { isPuppet, Puppet } from '@/components/Puppet';
 import { AudioManager } from '@/core/AudioManager';
 import { motion, prefersReducedMotion } from '@/core/Device';
 import { BaseLevel } from './BaseLevel';
@@ -51,6 +53,8 @@ export default class Level01Scene extends BaseLevel {
   private rain: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private darkness!: Phaser.GameObjects.Rectangle;
   private clouds: Phaser.GameObjects.Image[] = [];
+  private doorZone: DropZone | null = null;
+  private ghostById = new Map<string, Phaser.GameObjects.Image>();
 
   constructor() {
     super('Level01');
@@ -66,6 +70,8 @@ export default class Level01Scene extends BaseLevel {
     this.sheltered = 0;
     this.rain = null;
     this.clouds = [];
+    this.doorZone = null;
+    this.ghostById = new Map();
   }
 
   protected override buildLevel(): void {
@@ -84,12 +90,25 @@ export default class Level01Scene extends BaseLevel {
     for (const p of this.c.pieces) {
       const pos = HOUSE[p.id];
       if (!pos) continue;
+      // Sombra oscura (se ve sobre el cielo y también sobre la pared color crema). La de la
+      // puerta y la ventana va ENCIMA de las paredes, para que se vea dónde van.
       const ghost = this.add
         .image(pos.x, pos.y, tex(p.art))
-        .setTintFill(COLORS.white)
-        .setAlpha(0.45)
-        .setDepth(0.2 + pos.depth / 10);
+        .setTintFill(COLORS.ink)
+        .setAlpha(0.22)
+        .setDepth(pos.depth >= 3 ? 1.5 : 0.2 + pos.depth / 10);
+      if (pos.depth >= 3) {
+        this.tweens.add({
+          targets: ghost,
+          alpha: 0.4,
+          duration: 700,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+      }
       this.ghosts.push(ghost);
+      this.ghostById.set(p.id, ghost);
       zones.set(
         p.id,
         new DropZone(this, pos.x, pos.y, {
@@ -138,7 +157,13 @@ export default class Level01Scene extends BaseLevel {
       return 'reject';
     }
     const pos = HOUSE[item.itemId];
+    // La pieza se queda puesta en la casa (encima de su sombra, que ya no hace falta).
     this.time.delayedCall(10, () => item.setDepth(pos?.depth ?? 1));
+    const ghost = this.ghostById.get(item.itemId);
+    if (ghost) {
+      this.tweens.killTweensOf(ghost);
+      ghost.setVisible(false);
+    }
     this.placed += 1;
     const last = this.placed === this.c.pieces.length;
     this.correct(zone.x, zone.y - 40, last ? null : undefined);
@@ -197,29 +222,42 @@ export default class Level01Scene extends BaseLevel {
       height: 150,
       tolerance: 45,
     }).setDepth(3.5);
+    this.doorZone = doorZone;
     this.tweens.add({ targets: doorZone, alpha: 0.5, duration: 600, yoyo: true, repeat: -1 });
     this.c.family.forEach((m, i) => {
+      // Muñeco articulado (corre, respira, parpadea y se tapa de la lluvia).
       const img = artImage(this, 0, 0, m.art);
-      const label = addBody(this, 0, img.height / 2 + 14, m.label, 22, {
+      const h = img.height;
+      let body: Phaser.GameObjects.GameObject = img;
+      let puppet: Puppet | null = null;
+      if (isPuppet(m.art)) {
+        img.destroy();
+        puppet = new Puppet(this, 0, h / 2, m.art).setMode('run');
+        body = puppet;
+      }
+      const label = addBody(this, 0, h / 2 + 14, m.label, 22, {
         stroke: '#FFFFFF',
         strokeThickness: 5,
       });
       const homeX = 150 + i * 125;
-      const item = new DraggableItem(this, -120, 395, {
+      const item = new DraggableItem(this, -120 - i * 90, 395, {
         id: m.id,
-        content: [img, label],
+        content: [body, label],
         width: 110,
-        height: img.height,
+        height: h,
         zones: [doorZone],
         onDrop: (it, zone) => this.onFamilyDrop(it, zone),
       });
-      item.setScale(0.7).setDepth(4).setHome(homeX, 395);
+      item.setScale(0.8).setDepth(4).setHome(homeX, 395).setData('puppet', puppet);
+      // Llegan corriendo y siguen corriendo de un lado a otro por la lluvia (como en la
+      // carrera), hasta que el niño los toca y corren a la casa.
       this.tweens.add({
         targets: item,
         x: homeX,
-        duration: motion(700),
+        duration: motion(1100 + i * 120),
         delay: i * 150,
-        ease: 'Quad.easeOut',
+        ease: 'Sine.easeOut',
+        onComplete: () => this.pace(item, i),
       });
       this.family.push(item);
     });
@@ -228,7 +266,94 @@ export default class Level01Scene extends BaseLevel {
   }
 
   private onFamilyDrop(item: DraggableItem, zone: DropZone | null): DropDecision {
-    if (!zone) return 'ignore';
+    if (!zone) {
+      // Un toque (sin arrastrar): ¡sale corriendo solito a la casa!
+      const home = item.homePosition;
+      if (Math.hypot(item.x - home.x, item.y - home.y) < 60) {
+        this.time.delayedCall(0, () => this.runHome(item));
+      } else {
+        // Lo soltaron lejos de la puerta: regresa y sigue corriendo de un lado a otro.
+        const i = this.family.indexOf(item);
+        this.time.delayedCall(380, () => this.pace(item, Math.max(0, i)));
+      }
+      return 'ignore';
+    }
+    return this.shelter(item, zone);
+  }
+
+  /**
+   * Corre de un lado a otro cerca de su lugar, asustado por la lluvia: se da la vuelta en cada
+   * extremo. Con muñeco articulado corre de verdad; si no, solo va y viene.
+   */
+  private pace(item: DraggableItem, i: number): void {
+    if (!this.alive || item.isPlaced || item.getData('running')) return;
+    const puppet = item.getData('puppet') as Puppet | null;
+    if (!puppet || prefersReducedMotion()) {
+      puppet?.setMode('cover');
+      return;
+    }
+    puppet.setMode('run');
+    const home = item.homePosition.x;
+    const span = 38;
+    const dir = i % 2 === 0 ? 1 : -1;
+    puppet.scaleX = dir;
+    this.tweens.add({
+      targets: item,
+      x: { from: home - span * dir, to: home + span * dir },
+      duration: 700 + i * 90,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1,
+      onYoyo: () => {
+        puppet.scaleX = -dir;
+      },
+      onRepeat: () => {
+        puppet.scaleX = dir;
+      },
+    });
+  }
+
+  /** Corre hasta la puerta dando saltitos e inclinado hacia adelante; luego entra. */
+  private runHome(item: DraggableItem): void {
+    const door = this.doorZone;
+    if (!door || item.isPlaced || item.getData('running')) return;
+    item.setData('running', true);
+    item.disableInteractive();
+    this.tweens.killTweensOf(item);
+    AudioManager.sfx('pop', { pitch: 1.4 });
+    const dist = Math.abs(DOOR.x - item.x);
+    const duration = motion(Math.max(600, (dist / 460) * 1000));
+    const baseY = item.y;
+    const puppet = item.getData('puppet') as Puppet | null;
+    puppet?.setMode('run');
+    if (puppet) puppet.scaleX = 1; // hacia la casa (a la derecha)
+    // Si es muñeco, él mismo corre (piernas, brazos y rebote); si no, la imagen da saltitos.
+    const hops = puppet ? 0 : Math.max(3, Math.round(dist / 90));
+    const lean = { a: 0 };
+    if (!puppet) this.tweens.add({ targets: lean, a: 1, duration: motion(150) });
+    const p = { t: 0 };
+    const startX = item.x;
+    this.tweens.add({
+      targets: p,
+      t: 1,
+      duration,
+      ease: 'Sine.easeIn',
+      onUpdate: () => {
+        item.x = startX + (DOOR.x - startX) * p.t;
+        item.y =
+          baseY + (DOOR.y - 22 - baseY) * p.t - Math.abs(Math.sin(p.t * Math.PI * hops)) * 16;
+        item.angle = 10 * lean.a + Math.sin(p.t * Math.PI * hops * 2) * 4;
+      },
+      onComplete: () => {
+        item.setAngle(0);
+        if (!this.alive) return;
+        item.placeIn(door);
+        this.shelter(item, door);
+      },
+    });
+  }
+
+  private shelter(item: DraggableItem, zone: DropZone): DropDecision {
     this.sheltered += 1;
     // Entra a la casa: se encoge hacia la puerta.
     this.time.delayedCall(300, () => {
@@ -275,9 +400,8 @@ export default class Level01Scene extends BaseLevel {
       rainbow.strokePath();
     });
     this.tweens.add({ targets: rainbow, alpha: 1, duration: motion(1200), delay: 400 });
-    const sun = artImage(this, 1150, -120, 'sol').setDepth(0.8).setScale(0.8);
+    const sun = addSun(this, 1150, -120, 0.8).setDepth(0.8);
     this.tweens.add({ targets: sun, y: 110, duration: motion(900), ease: 'Back.easeOut' });
-    this.tweens.add({ targets: sun, angle: 360, duration: 20000, repeat: -1 });
     await this.complete(this.c.safe);
   }
 
@@ -290,8 +414,8 @@ export default class Level01Scene extends BaseLevel {
         : null;
     }
     if (this.stage === 'rain') {
-      const next = this.family.find((m) => !m.isPlaced);
-      return next ? { kind: 'drag', from: { x: next.x, y: next.y }, to: DOOR } : null;
+      const next = this.family.find((m) => !m.isPlaced && !m.getData('running'));
+      return next ? { kind: 'tap', x: next.x, y: next.y } : null;
     }
     return null;
   }

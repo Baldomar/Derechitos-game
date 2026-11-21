@@ -91,7 +91,12 @@ export default class Level04Scene extends BaseLevel {
     for (let r = 0; r < rows; r++) {
       for (let col = 0; col < cols; col++) {
         const id = `p${r}${col}`;
-        if (!texture.has(id)) texture.add(id, 0, col * pw, r * ph, pw, ph);
+        if (!texture.has(id)) {
+          texture.add(id, 0, col * pw, r * ph, pw, ph);
+          // Phaser vuelve "imagen por defecto" la primera pieza que se agrega: se regresa a
+          // la imagen completa para que el salón se vea entero en los demás juegos.
+          texture.firstFrame = '__BASE';
+        }
         const zx = BOARD.x - BOARD.w / 2 + pw * (col + 0.5);
         const zy = BOARD.y - BOARD.h / 2 + ph * (r + 0.5);
         const zone = new DropZone(this, zx, zy, { id, width: pw, height: ph, tolerance: 18 });

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { VoiceLine } from '@/config/levels';
 import { GameState, STATE_EVENTS } from './GameState';
+import { textVoiceKey } from './voiceKey';
 
 /**
  * Audio del juego con Web Audio API:
@@ -19,6 +20,10 @@ import { GameState, STATE_EVENTS } from './GameState';
  */
 
 export type SfxName = 'pop' | 'success' | 'hint' | 'star' | 'medal' | 'fanfare';
+
+/** Sonido propio de cada juguete (sintetizado, sin archivos). */
+export type ToySound =
+  'pelota' | 'trompo' | 'papalote' | 'carrito' | 'claxon' | 'balon' | 'bloques' | 'tambor';
 
 export const AUDIO_EVENTS = {
   VOICE_START: 'voice-start',
@@ -106,8 +111,13 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
   private readonly buffers = new Map<string, Promise<AudioBuffer | null>>();
 
   private voiceSource: AudioBufferSourceNode | null = null;
+  /** Línea que se está diciendo ahora (para no reiniciarla si la piden otra vez). */
+  private current: { id: string; done: Promise<void> } | null = null;
   private speakToken = 0;
   private ttsVoice: SpeechSynthesisVoice | null = null;
+
+  /** Ya se avisó (una sola vez) que el audio quedó activo. */
+  private announced = false;
 
   private musicWanted = false;
   private musicRunning = false;
@@ -142,9 +152,33 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
     }
   }
 
+  /** true cuando el navegador ya dejó sonar el audio (hubo un toque y el audio está activo). */
+  get unlocked(): boolean {
+    return this.gestured && this.ctx?.state === 'running';
+  }
+
+  /** Avisa una sola vez que el audio quedó activo (para repetir el saludo con voz, etc.). */
+  private announceUnlocked(): void {
+    if (this.announced || !this.unlocked) return;
+    this.announced = true;
+    this.emit(AUDIO_EVENTS.UNLOCKED);
+  }
+
   /** true si existe una grabación para esa línea. */
   hasRecording(id: string): boolean {
     return this.voiceFiles.has(id);
+  }
+
+  /**
+   * Archivo de voz de una línea: primero por su id; si no hay, por su texto
+   * (frases que se arman al jugar, generadas desde config/voiceCatalog.ts).
+   */
+  private voiceFor(line: VoiceLine): { key: string; loader: UrlLoader } | null {
+    const byId = this.voiceFiles.get(line.id);
+    if (byId) return { key: line.id, loader: byId };
+    const tk = textVoiceKey(line.text);
+    const byText = this.voiceFiles.get(tk);
+    return byText ? { key: tk, loader: byText } : null;
   }
 
   // ---------------------------------------------------------------- Desbloqueo
@@ -187,12 +221,14 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
       ctx
         .resume()
         .then(() => {
-          this.emit(AUDIO_EVENTS.UNLOCKED);
           this.maybeStartMusic();
+          this.announceUnlocked();
         })
         .catch(() => undefined);
     } else {
+      // En algunos navegadores el audio creado dentro del toque ya nace activo.
       this.maybeStartMusic();
+      this.announceUnlocked();
     }
   }
 
@@ -296,8 +332,8 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
   preloadVoices(lines: VoiceLine[]): void {
     if (!this.ctx) return;
     for (const line of lines) {
-      const loader = this.voiceFiles.get(line.id);
-      if (loader) void this.getBuffer(`voice:${line.id}`, loader);
+      const v = this.voiceFor(line);
+      if (v) void this.getBuffer(`voice:${v.key}`, v.loader);
     }
   }
 
@@ -340,6 +376,221 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
       osc.disconnect();
       g.disconnect();
     };
+  }
+
+  private noiseBuf: AudioBuffer | null = null;
+
+  /** Ruido blanco (para viento, golpes y zumbidos). */
+  private noise(): AudioBuffer | null {
+    const ctx = this.ctx;
+    if (!ctx) return null;
+    if (!this.noiseBuf) {
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 1.2), ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      this.noiseBuf = buf;
+    }
+    return this.noiseBuf;
+  }
+
+  /** Ruido filtrado con una curva de volumen y de filtro (viento, "fuush", golpe seco). */
+  private whoosh(o: {
+    start: number;
+    dur: number;
+    gain: number;
+    from: number;
+    to: number;
+    q?: number;
+  }): void {
+    const ctx = this.ctx;
+    const buf = this.noise();
+    if (!ctx || !buf) return;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const f = ctx.createBiquadFilter();
+    f.type = 'bandpass';
+    f.Q.value = o.q ?? 1.2;
+    f.frequency.setValueAtTime(o.from, o.start);
+    f.frequency.exponentialRampToValueAtTime(o.to, o.start + o.dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, o.start);
+    g.gain.exponentialRampToValueAtTime(o.gain, o.start + o.dur * 0.35);
+    g.gain.exponentialRampToValueAtTime(0.0001, o.start + o.dur);
+    src.connect(f).connect(g).connect(this.sfxBus);
+    src.start(o.start);
+    src.stop(o.start + o.dur + 0.05);
+    src.onended = () => {
+      src.disconnect();
+      f.disconnect();
+      g.disconnect();
+    };
+  }
+
+  /** Motor (sierra grave filtrada con retumbo): cada [inicio, Hz] es un "run". */
+  private engine(t: number, revs: [number, number][]): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    for (const [at, base] of revs) {
+      const start = t + at;
+      const dur = 0.24;
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(base, start);
+      osc.frequency.exponentialRampToValueAtTime(base * 1.55, start + dur * 0.7);
+      osc.frequency.exponentialRampToValueAtTime(base * 1.3, start + dur);
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(500, start);
+      lp.frequency.exponentialRampToValueAtTime(1100, start + dur * 0.7);
+      lp.Q.value = 4;
+      // Retumbo: el volumen vibra rápido (el "rrr" del motor).
+      const amp = ctx.createGain();
+      amp.gain.value = 0.6;
+      const lfo = ctx.createOscillator();
+      lfo.frequency.setValueAtTime(26, start);
+      lfo.frequency.linearRampToValueAtTime(38, start + dur);
+      const lfoDepth = ctx.createGain();
+      lfoDepth.gain.value = 0.4;
+      lfo.connect(lfoDepth).connect(amp.gain);
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.0001, start);
+      env.gain.exponentialRampToValueAtTime(0.34, start + 0.04);
+      env.gain.setValueAtTime(0.34, start + dur * 0.6);
+      env.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      osc.connect(lp).connect(amp).connect(env).connect(this.sfxBus);
+      osc.start(start);
+      lfo.start(start);
+      osc.stop(start + dur + 0.03);
+      lfo.stop(start + dur + 0.03);
+      osc.onended = () => {
+        osc.disconnect();
+        lp.disconnect();
+        amp.disconnect();
+        lfo.disconnect();
+        lfoDepth.disconnect();
+        env.disconnect();
+      };
+    }
+  }
+
+  /**
+   * Sonido propio de un juguete: la pelota rebota, el trompo zumba, el papalote hace viento,
+   * el carrito pita… Así el niño escucha el juguete, no un "pop" cualquiera.
+   */
+  toy(kind: ToySound): void {
+    const ctx = this.ctx;
+    if (!ctx || ctx.state === 'closed') return;
+    const st = GameState.settings;
+    if (st.sfxMuted || st.sfx === 0) return;
+    const t = ctx.currentTime + 0.005;
+    const out = this.sfxBus;
+    switch (kind) {
+      case 'pelota':
+        // Pelota que bota contra el piso: tum… tum.. tum. tum, cada golpe más cerca y más
+        // suave, con un "pong" de hule en cada rebote.
+        [0, 0.26, 0.45, 0.59, 0.69].forEach((at, i) => {
+          const k = Math.pow(0.72, i);
+          this.tone({
+            freq: 190,
+            to: 65,
+            start: t + at,
+            dur: 0.13,
+            type: 'sine',
+            gain: 0.7 * k,
+            out,
+          });
+          this.tone({
+            freq: 760,
+            to: 430,
+            start: t + at,
+            dur: 0.07,
+            type: 'triangle',
+            gain: 0.16 * k,
+            out,
+          });
+          this.whoosh({ start: t + at, dur: 0.04, gain: 0.12 * k, from: 1600, to: 900, q: 1.5 });
+        });
+        break;
+      case 'trompo': {
+        // Zumbido que gira: tono con vibrato rápido que sube un poco.
+        const osc = ctx.createOscillator();
+        const lfo = ctx.createOscillator();
+        const depth = ctx.createGain();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, t);
+        osc.frequency.exponentialRampToValueAtTime(520, t + 0.6);
+        lfo.frequency.setValueAtTime(22, t);
+        depth.gain.value = 45;
+        lfo.connect(depth).connect(osc.frequency);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.22, t + 0.08);
+        g.gain.setValueAtTime(0.22, t + 0.45);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.68);
+        osc.connect(g).connect(out);
+        osc.start(t);
+        lfo.start(t);
+        osc.stop(t + 0.72);
+        lfo.stop(t + 0.72);
+        osc.onended = () => {
+          osc.disconnect();
+          lfo.disconnect();
+          depth.disconnect();
+          g.disconnect();
+        };
+        this.whoosh({ start: t, dur: 0.66, gain: 0.06, from: 1800, to: 3200, q: 3 });
+        break;
+      }
+      case 'papalote':
+        // Viento: "fuuuush" que sube y baja, con un aleteo de la tela.
+        this.whoosh({ start: t, dur: 0.38, gain: 1, from: 300, to: 1400, q: 0.9 });
+        this.whoosh({ start: t + 0.3, dur: 0.4, gain: 0.75, from: 1400, to: 380, q: 0.9 });
+        [0.1, 0.22, 0.34].forEach((at) =>
+          this.whoosh({ start: t + at, dur: 0.07, gain: 0.22, from: 2600, to: 1800, q: 2 }),
+        );
+        break;
+      case 'carrito':
+        // Motor de carrito: ¡run, run, run! Tres aceleradas, cada una un poco más aguda.
+        this.engine(t, [
+          [0, 70],
+          [0.27, 82],
+          [0.54, 96],
+        ]);
+        break;
+      case 'claxon':
+        // ¡Pi-pi! Bocina de carro, dos veces.
+        [0, 0.22].forEach((at) => {
+          this.tone({ freq: 392, start: t + at, dur: 0.16, type: 'square', gain: 0.12, out });
+          this.tone({ freq: 494, start: t + at, dur: 0.16, type: 'square', gain: 0.1, out });
+        });
+        break;
+      case 'balon':
+        // Patada: golpe grave y seco.
+        this.tone({ freq: 180, to: 60, start: t, dur: 0.16, type: 'sine', gain: 0.6, out });
+        this.whoosh({ start: t, dur: 0.08, gain: 0.25, from: 900, to: 400, q: 1 });
+        break;
+      case 'bloques':
+        // Clac-clac de madera.
+        [0, 0.12].forEach((at) => {
+          this.tone({
+            freq: 900,
+            to: 700,
+            start: t + at,
+            dur: 0.06,
+            type: 'square',
+            gain: 0.2,
+            out,
+          });
+          this.whoosh({ start: t + at, dur: 0.05, gain: 0.4, from: 2400, to: 1600, q: 4 });
+        });
+        break;
+      case 'tambor':
+        [0, 0.18].forEach((at) => {
+          this.tone({ freq: 150, to: 70, start: t + at, dur: 0.22, type: 'sine', gain: 0.55, out });
+          this.whoosh({ start: t + at, dur: 0.1, gain: 0.18, from: 600, to: 300, q: 1 });
+        });
+        break;
+    }
   }
 
   private synthSfx(name: SfxName, pitch: number, index: number): void {
@@ -528,7 +779,20 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
    * Siempre resuelve (al terminar, al ser interrumpida o por tiempo límite).
    * Con la voz silenciada espera el tiempo de lectura para que el ritmo sea igual.
    */
-  async speak(line: VoiceLine): Promise<void> {
+  speak(line: VoiceLine): Promise<void> {
+    // Si ya está diciendo esta misma línea (p. ej. el niño toca varias veces lo mismo),
+    // no se corta ni se reinicia: se espera a que termine. Así no se oye "tartamudeando".
+    if (this.current?.id === line.id) return this.current.done;
+    const done = this.speakNow(line);
+    const entry = { id: line.id, done };
+    this.current = entry;
+    void done.finally(() => {
+      if (this.current === entry) this.current = null;
+    });
+    return done;
+  }
+
+  private async speakNow(line: VoiceLine): Promise<void> {
     this.stopVoice();
     const token = this.speakToken;
     const s = GameState.settings;
@@ -539,7 +803,7 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
     this.emit(AUDIO_EVENTS.VOICE_START, line);
     this.setDuck(true);
     try {
-      const played = await this.playRecorded(line.id, token);
+      const played = await this.playRecorded(line, token);
       if (!played && token === this.speakToken) await this.speakTts(line.text);
     } finally {
       if (token === this.speakToken) {
@@ -549,10 +813,18 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
     }
   }
 
-  private async playRecorded(id: string, token: number): Promise<boolean> {
-    const loader = this.voiceFiles.get(id);
-    if (!loader || !this.ctx) return false;
-    const buffer = await this.getBuffer(`voice:${id}`, loader);
+  private async playRecorded(line: VoiceLine, token: number): Promise<boolean> {
+    const v = this.voiceFor(line);
+    if (!v || !this.ctx) {
+      if (import.meta.env.DEV && !v) {
+        // En desarrollo: avisa qué frase no tiene voz grabada (npm run voces la genera).
+        console.warn('[voz automática]', line.id, '→', line.text);
+        const w = window as unknown as { __ttsMisses?: VoiceLine[] };
+        (w.__ttsMisses ??= []).push(line);
+      }
+      return false;
+    }
+    const buffer = await this.getBuffer(`voice:${v.key}`, v.loader);
     if (!buffer) return false;
     if (token !== this.speakToken || !this.ctx) return true; // interrumpida mientras cargaba
     const ctx = this.ctx;
@@ -567,6 +839,20 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
       };
       this.voiceSource = src;
       src.start();
+      // Red de seguridad: si el audio se detiene sin avisar, el juego no se queda esperando.
+      window.setTimeout(
+        () => {
+          if (this.voiceSource === src) {
+            try {
+              src.stop();
+            } catch {
+              // ya terminó
+            }
+          }
+          resolve(true);
+        },
+        buffer.duration * 1000 + 2500,
+      );
     });
   }
 
@@ -600,6 +886,7 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
   /** Corta la voz actual (al cambiar de escena, repetir o silenciar). */
   stopVoice(): void {
     this.speakToken += 1;
+    this.current = null;
     if (this.voiceSource) {
       try {
         this.voiceSource.stop();

@@ -36,6 +36,9 @@ initOrientation(game);
 
 // Solo en desarrollo: atajo para pruebas automáticas (no se incluye en el build de producción).
 if (import.meta.env.DEV) {
+  void import('@/core/GameState').then(({ GameState }) => {
+    (window as unknown as Record<string, unknown>).__state = GameState;
+  });
   void import('@/core/SceneTransition').then(({ goTo }) => {
     (window as unknown as Record<string, unknown>).__game = game;
     (window as unknown as Record<string, unknown>).__goto = (key: string, data?: object) => {

@@ -165,7 +165,7 @@ export default class LabScene extends Phaser.Scene {
     add('soda', 700, 420, soda());
     add('jocote', 630, 540, fruit(0xe8505b, true));
 
-    // ----- Ayuda automática (8 s sin tocar) -----
+    // ----- Ayuda automática (5 s sin tocar) -----
     new IdleHint(
       this,
       () => {

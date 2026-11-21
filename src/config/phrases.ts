@@ -105,6 +105,11 @@ export const CHALLENGES_OPEN: VoiceLine = {
   id: 'challenges_open',
   text: '¡Desbloqueaste los desafíos!',
 };
+/** Al final de cada juego, en la pantalla de recompensa. */
+export const REWARD_CONTINUE: VoiceLine = {
+  id: 'reward_continue',
+  text: 'Toca el botón amarillo para continuar.',
+};
 export const MEDALS_HELLO: VoiceLine = {
   id: 'medals_hello',
   text: 'Estas son tus medallas. ¡Sigue jugando para ganar más!',
