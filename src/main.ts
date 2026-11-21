@@ -5,6 +5,7 @@ import PreloadScene from '@/scenes/Preload';
 import { AudioManager } from '@/core/AudioManager';
 import { initViewport } from '@/core/Viewport';
 import { initOrientation } from '@/core/Orientation';
+import { registerSW } from 'virtual:pwa-register';
 
 /**
  * Solo Boot y Preload van en el bundle inicial; el resto de escenas se descargan
@@ -31,6 +32,10 @@ const config: Phaser.Types.Core.GameConfig = {
 
 AudioManager.init();
 const game = new Phaser.Game(config);
+
+// Versión instalable (sin conexión): cuando se publica una versión nueva, se descarga en
+// segundo plano y la página se recarga sola para mostrarla (el avance queda guardado).
+if (import.meta.env.PROD) registerSW({ immediate: true });
 initViewport(game);
 initOrientation(game);
 

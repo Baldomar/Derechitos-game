@@ -51,9 +51,21 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,webp,json,ogg,mp3,woff2}'],
+        // Las voces (cientos de mp3) NO van en la descarga inicial: así una versión nueva se
+        // instala en segundos. Cada voz se guarda en caché la primera vez que suena.
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,json,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
+          {
+            urlPattern: /\.(?:mp3|ogg|m4a)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'voces',
+              expiration: { maxEntries: 1500 },
+              cacheableResponse: { statuses: [0, 200] },
+              rangeRequests: true,
+            },
+          },
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: 'CacheFirst',
