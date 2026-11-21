@@ -53,6 +53,11 @@ export const MAP_FIRST: VoiceLine = {
   id: 'map_first',
   text: '¡Bienvenido a la Isla Derechitos! Toca la zona que brilla para empezar.',
 };
+/** Primera vez en el mapa: bienvenida antes de decir qué zona tocar. */
+export const MAP_WELCOME: VoiceLine = {
+  id: 'map_welcome',
+  text: '¡Te damos la bienvenida a la Isla Derechitos!',
+};
 export const MAP_NEXT: VoiceLine = {
   id: 'map_next',
   text: '¡Muy bien! Toca la zona que brilla para seguir la aventura.',

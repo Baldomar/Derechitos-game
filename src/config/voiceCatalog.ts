@@ -98,7 +98,7 @@ export const mapHelloLine = (r: RightArea, fresh: boolean): VoiceLine =>
   fresh
     ? {
         id: 'map_hello_start',
-        text: `¡Hola! Empieza tu aventura en la zona ${r.short}. Tócala para jugar.`,
+        text: `Toca la zona ${r.short} para iniciar tu aventura.`,
       }
     : {
         id: `map_hello_${r.id}`,

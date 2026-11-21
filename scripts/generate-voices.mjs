@@ -269,6 +269,15 @@ async function main() {
   console.log(`Voz: ${name} / ${provider.voice()}`);
   console.log(`${todo.length} de ${all.length} frases por generar (${todoChars} caracteres).`);
 
+  // Borra audios que ya no usa ninguna frase (textos que cambiaron o se quitaron).
+  const valid = new Set(all.map((l) => `${l.id}.mp3`));
+  const orphans = readdirSync(OUT).filter((f) => f.endsWith('.mp3') && !valid.has(f));
+  for (const f of orphans) {
+    rmSync(join(OUT, f));
+    Reflect.deleteProperty(manifest, f.replace(/\.mp3$/, ''));
+  }
+  if (orphans.length) console.log(`Se borraron ${orphans.length} audios que ya no se usan.`);
+
   let done = 0;
   const failed = [];
   for (const l of todo) {

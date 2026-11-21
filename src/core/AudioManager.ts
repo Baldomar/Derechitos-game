@@ -146,6 +146,7 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
     }
     document.addEventListener('visibilitychange', () => this.onVisibility());
     GameState.on(STATE_EVENTS.SETTINGS, () => this.applySettings());
+    this.tryAutoStart();
     if ('speechSynthesis' in window) {
       this.loadTtsVoice();
       window.speechSynthesis.addEventListener('voiceschanged', () => this.loadTtsVoice());
@@ -183,6 +184,41 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
 
   // ---------------------------------------------------------------- Desbloqueo
 
+  /** Crea el contexto de audio (una sola vez). */
+  private ensureCtx(): AudioContext | null {
+    if (this.ctx) return this.ctx;
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return null;
+    try {
+      this.ctx = new Ctor({ latencyHint: 'interactive' });
+    } catch {
+      return null;
+    }
+    this.buildGraph(this.ctx);
+    this.applySettings();
+    return this.ctx;
+  }
+
+  /**
+   * Intenta sonar sin esperar un toque. Muchos navegadores lo bloquean (entonces se espera
+   * el primer toque en cualquier parte), pero algunos lo permiten, p. ej. si el juego está
+   * instalado o ya se ha jugado seguido en ese navegador.
+   */
+  private tryAutoStart(): void {
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
+    const started = (): void => {
+      if (ctx.state !== 'running') return;
+      this.gestured = true;
+      this.maybeStartMusic();
+      this.announceUnlocked();
+    };
+    if (ctx.state === 'running') started();
+    else void ctx.resume().then(started, () => undefined);
+  }
+
   private unlock(e: Event): void {
     // pointerdown con el dedo NO activa el audio en móviles; con mouse sí.
     const isActivation = !(
@@ -194,20 +230,8 @@ class AudioManagerImpl extends Phaser.Events.EventEmitter {
       this.gestured = true;
       this.primeTts();
     }
-    if (!this.ctx) {
-      const Ctor =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!Ctor) return;
-      try {
-        this.ctx = new Ctor({ latencyHint: 'interactive' });
-      } catch {
-        return;
-      }
-      this.buildGraph(this.ctx);
-      this.applySettings();
-    }
-    const ctx = this.ctx;
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
     if (ctx.state !== 'running' && document.visibilityState === 'visible') {
       // iOS: reproducir un sonido vacío dentro del gesto "despierta" el audio.
       try {

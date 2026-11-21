@@ -88,7 +88,8 @@ export default class TitleScene extends Phaser.Scene {
     new IdleHint(this, () => ({ kind: 'tap', x: play.x, y: play.y }));
 
     AudioManager.playMusic();
-    this.time.delayedCall(1300, () => void this.say(TITLE_HELLO));
+    this.greeted = false;
+    this.time.delayedCall(1300, () => this.greet());
     if (!AudioManager.unlocked) this.waitForSound();
     this.time.addEvent({ delay: 7000, loop: true, callback: () => this.tori.wave() });
 
@@ -567,61 +568,23 @@ export default class TitleScene extends Phaser.Scene {
     this.bubble.setSize(w, h + 30);
   }
 
+  /** Tori saluda; con voz solo una vez (cuando el audio ya está activo). */
+  private greeted = false;
+  private greet(): void {
+    if (this.greeted || !this.scene.isActive()) return;
+    if (AudioManager.unlocked) this.greeted = true;
+    void this.say(TITLE_HELLO);
+  }
+
   /**
-   * Los navegadores no dejan sonar nada hasta el primer toque. Mientras tanto se muestra
-   * "Toca para escuchar"; con el primer toque arranca la canción y Tori saluda con su voz.
+   * Los navegadores no dejan sonar nada hasta que se toca la pantalla (si lo permiten,
+   * suena solo al abrir). En cuanto se toca cualquier parte, arranca la canción y Tori
+   * saluda con su voz. No hace falta ningún botón especial.
    */
   private waitForSound(): void {
-    const icon = this.add.graphics();
-    icon.fillStyle(COLORS.white).fillRect(-10, -6, 8, 12).fillTriangle(-2, -6, 8, -14, 8, 14);
-    icon.fillTriangle(-2, 6, 8, -14, 8, 14);
-    icon.lineStyle(3, COLORS.white);
-    icon.beginPath();
-    icon.arc(10, 0, 9, -0.9, 0.9);
-    icon.strokePath();
-    icon.beginPath();
-    icon.arc(10, 0, 16, -0.9, 0.9);
-    icon.strokePath();
-    const label = this.add
-      .text(16, 2, 'Toca para escuchar', {
-        fontFamily: FONTS.title,
-        fontSize: '26px',
-        fontStyle: '800',
-        color: CSS.white,
-        resolution: TEXT_RESOLUTION,
-        padding: { top: 4 },
-      })
-      .setOrigin(0, 0.5);
-    const w = label.width + 92;
-    const bg = this.add.graphics();
-    bg.fillStyle(COLORS.ink, 0.25).fillRoundedRect(-w / 2, -24, w, 56, 28);
-    bg.fillStyle(COLORS.turquoise).fillRoundedRect(-w / 2, -28, w, 56, 28);
-    bg.lineStyle(4, COLORS.ink).strokeRoundedRect(-w / 2, -28, w, 56, 28);
-    icon.setPosition(-w / 2 + 34, 0);
-    label.setX(-w / 2 + 72);
-    const prompt = this.add.container(LOGO_X, 540, [bg, icon, label]).setDepth(20);
-    if (!prefersReducedMotion()) {
-      this.tweens.add({
-        targets: prompt,
-        scale: 1.06,
-        duration: 600,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-    }
     const onUnlock = (): void => {
       if (!this.scene.isActive()) return;
-      this.tweens.killTweensOf(prompt);
-      this.tweens.add({
-        targets: prompt,
-        scale: 0,
-        alpha: 0,
-        duration: motion(250),
-        onComplete: () => prompt.destroy(),
-      });
-      // Ahora sí se escucha: Tori repite su saludo con voz.
-      this.time.delayedCall(300, () => void this.say(TITLE_HELLO));
+      this.time.delayedCall(300, () => this.greet());
     };
     AudioManager.once(AUDIO_EVENTS.UNLOCKED, onUnlock);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>

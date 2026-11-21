@@ -26,6 +26,7 @@ import { viewportMargin } from '@/core/Viewport';
 import { goTo, prefetchScene } from '@/core/SceneTransition';
 import { TEX } from '@/core/Textures';
 import { mapChestLine, mapHelloLine, zoneNameLine } from '@/config/voiceCatalog';
+import { MAP_WELCOME } from '@/config/phrases';
 
 /** Mar extra a cada lado del área de diseño (pantallas panorámicas). */
 const SEA_PAD = 320;
@@ -1226,7 +1227,11 @@ export default class WorldMapScene extends Phaser.Scene {
     const lines = Array.isArray(line) ? line : [line];
     if (this.live) this.live.textContent = lines.map((l) => l.text).join(' ');
     void this.bubble.say(lines);
-    this.hideTimer = this.time.delayedCall(8000, () => this.hideBubble());
+    // El globo se queda hasta que Tori termina de hablar (aprox. por la longitud del texto).
+    const chars = lines.reduce((n, l) => n + l.text.length, 0);
+    this.hideTimer = this.time.delayedCall(Math.max(8000, chars * 75 + 4000), () =>
+      this.hideBubble(),
+    );
   }
 
   private hideBubble(): void {
@@ -1236,7 +1241,7 @@ export default class WorldMapScene extends Phaser.Scene {
     this.closeBtn.setVisible(false);
   }
 
-  private helloLine(): VoiceLine {
+  private helloLine(): VoiceLine | VoiceLine[] {
     const cur = this.current;
     if (!cur)
       return {
@@ -1244,7 +1249,8 @@ export default class WorldMapScene extends Phaser.Scene {
         text: '¡Completaste toda la isla! Toca el cofre para ver tu diploma.',
       };
     const fresh = this.zones.every((z) => z.state !== 'done');
-    return mapHelloLine(cur.right, fresh);
+    // Al empezar: primero la bienvenida a la isla y luego qué zona tocar.
+    return fresh ? [MAP_WELCOME, mapHelloLine(cur.right, true)] : mapHelloLine(cur.right, false);
   }
 
   // ------------------------------------------------------------------ tocar una zona
