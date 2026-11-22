@@ -19,7 +19,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="icon" type="image/png" href="/icons/favicon-64.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -43,6 +43,15 @@
         user-select: none;
         -webkit-tap-highlight-color: transparent;
         -webkit-touch-callout: none;
+      }
+      /* Los cuadros para escribir (nombre del diploma) sí deben dejar escribir y seleccionar:
+         sin esto, en iPhone y algunos Android no aparece el cursor ni se puede teclear. */
+      input,
+      textarea {
+        -webkit-user-select: text;
+        user-select: text;
+        -webkit-touch-callout: default;
+        touch-action: manipulation;
       }
       /* El juego ocupa la pantalla visible real (100dvh: sin quedar bajo la barra del navegador)
          y respeta muescas, cámaras y bordes redondeados (safe-area). */

@@ -56,6 +56,11 @@ export function initOrientation(game: Phaser.Game): void {
     'pointerup',
     (e) => {
       if (e.pointerType !== 'touch' || !lockable || game.scale.isFullscreen) return;
+      // No al tocar un cuadro para escribir o sus botones: cambiar a pantalla completa en ese
+      // momento cierra el teclado del celular.
+      const t = e.target as Element | null;
+      if (t?.closest?.('input, textarea, button, form, label')) return;
+      if (document.activeElement instanceof HTMLInputElement) return;
       const now = Date.now();
       if (now - last < 1500) return;
       last = now;

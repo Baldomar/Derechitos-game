@@ -109,7 +109,7 @@ export default class CatchGameScene extends BaseActivity<CatchActivity> {
     });
 
     const move = (p: Phaser.Input.Pointer): void => {
-      if (!p.isDown || !this.playing) return;
+      if (!p.isDown || !this.playing || this.inputLocked) return;
       this.targetX = Phaser.Math.Clamp(p.x, MIN_X, MAX_X);
       if (!this.moved) {
         this.moved = true;

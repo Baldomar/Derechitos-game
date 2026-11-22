@@ -1319,6 +1319,57 @@ export const ART = {
       );
     },
   },
+  huerta: {
+    w: 140,
+    h: 110,
+    draw: (g) => {
+      // Huerta: tierra con surcos, zanahoria asomando, lechuga y una mata de tomate.
+      g.fillStyle(INK, 0.15).fillEllipse(70, 104, 124, 8);
+      // Mata de tomate (atrás, a la derecha)
+      g.lineStyle(5, 0x3e9a4c).lineBetween(108, 70, 108, 30);
+      g.fillStyle(0x5cbf5a).fillEllipse(98, 42, 18, 10).fillEllipse(119, 34, 18, 10);
+      g.lineStyle(2.5, INK).strokeEllipse(98, 42, 18, 10).strokeEllipse(119, 34, 18, 10);
+      for (const [x, y] of [
+        [100, 56],
+        [117, 50],
+        [109, 24],
+      ] as const) {
+        g.fillStyle(0xe8453c).fillCircle(x, y, 8);
+        g.fillStyle(COLORS.white, 0.5).fillCircle(x - 3, y - 3, 2.5);
+        g.lineStyle(2.5, INK).strokeCircle(x, y, 8);
+      }
+      // Hojas de la zanahoria
+      for (const [dx, dy] of [
+        [-11, -30],
+        [0, -36],
+        [11, -30],
+      ] as const) {
+        const pts = [
+          { x: 32, y: 62 },
+          { x: 32 + dx - 5, y: 62 + dy },
+          { x: 32 + dx + 5, y: 62 + dy },
+        ];
+        g.fillStyle(0x4caf50).fillPoints(pts, true);
+        g.lineStyle(2.5, INK).strokePoints(pts, true, true);
+      }
+      // Tierra con surcos
+      g.fillStyle(0x9a6a3a).fillRoundedRect(8, 62, 124, 40, 18);
+      g.fillStyle(0xb5824c).fillRoundedRect(14, 64, 112, 12, 6);
+      g.lineStyle(3, 0x6e4724).lineBetween(20, 84, 120, 84).lineBetween(26, 94, 114, 94);
+      g.lineStyle(LW, INK).strokeRoundedRect(8, 62, 124, 40, 18);
+      // Zanahoria asomando de la tierra
+      g.fillStyle(0xf58a1f).fillEllipse(32, 68, 22, 16);
+      g.lineStyle(3, INK).strokeEllipse(32, 68, 22, 16);
+      // Lechuga
+      g.fillStyle(0x7fcf5a).fillCircle(60, 60, 13).fillCircle(80, 60, 13).fillCircle(70, 50, 14);
+      g.lineStyle(3, INK)
+        .strokeCircle(60, 60, 13)
+        .strokeCircle(80, 60, 13)
+        .strokeCircle(70, 50, 14);
+      g.fillStyle(0xb6e88f).fillCircle(70, 58, 10);
+      g.lineStyle(2.5, INK).strokeCircle(70, 58, 10);
+    },
+  },
   verduras: {
     w: 110,
     h: 110,

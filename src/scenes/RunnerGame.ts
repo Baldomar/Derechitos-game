@@ -97,6 +97,7 @@ export default class RunnerGameScene extends BaseActivity<RunnerActivity> {
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (p: Phaser.Input.Pointer) => {
       // El botón "Volver" está arriba a la izquierda: ahí no se salta.
       if (p.y < 110 && p.x < 220) return;
+      if (this.inputLocked) return; // Tori está dando indicaciones
       this.jump();
     });
     this.input.keyboard?.on('keydown-SPACE', () => this.jump());

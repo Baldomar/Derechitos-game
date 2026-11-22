@@ -149,6 +149,7 @@ export default class StackGameScene extends BaseActivity<StackActivity> {
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (p: Phaser.Input.Pointer) => {
       if (p.y < 110 && p.x < 220) return;
+      if (this.inputLocked) return; // Tori está dando indicaciones
       this.drop();
     });
     this.input.keyboard?.on('keydown-SPACE', () => this.drop());

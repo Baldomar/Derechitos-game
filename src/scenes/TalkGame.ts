@@ -560,8 +560,9 @@ export default class TalkGameScene extends BaseActivity<TalkActivity> {
   private calmKid(k: number): void {
     this.stopShout(k);
     AudioManager.sfx('success');
-    this.kidBubble(k, { text: 'Shh…' });
-    this.time.delayedCall(900, () => this.clearBubble(k));
+    // El amigo levanta la mano para esperar su turno (globo con la manita arriba).
+    this.kidBubble(k, { art: 'mano-arriba' });
+    this.time.delayedCall(1400, () => this.clearBubble(k));
     // Espera su turno con la mano arriba.
     this.pup(k)?.raiseHand(true);
     const kid = this.kids[k];
@@ -570,12 +571,12 @@ export default class TalkGameScene extends BaseActivity<TalkActivity> {
     pip?.setFillStyle(COLORS.grass);
     if (pip) this.tweens.add({ targets: pip, scale: 1.4, duration: 140, yoyo: true });
     this.calmed += 1;
-    if (this.calmed === 1) void this.say(this.activity.listen.calm);
+    void this.say(this.activity.listen.calm);
     if (this.calmed >= CALM_GOAL) {
       void this.finishListen();
       return;
     }
-    this.scheduleInterrupt(this.calmed === 1 ? 3200 : Phaser.Math.Between(1400, 2400));
+    this.scheduleInterrupt(Phaser.Math.Between(2800, 3600));
   }
 
   private missed(): void {

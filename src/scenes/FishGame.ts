@@ -131,6 +131,7 @@ export default class FishGameScene extends BaseActivity<FishActivity> {
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (p: Phaser.Input.Pointer) => {
       if (p.y < 110 && p.x < 220) return; // botón "Volver"
+      if (this.inputLocked) return; // Tori está dando indicaciones
       if (!this.playing || this.state !== 'idle' || p.y < SURFACE - 10) return;
       const { left, right } = this.edges();
       this.cast(

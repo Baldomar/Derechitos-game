@@ -1654,10 +1654,10 @@ export const RIGHT_AREAS: readonly RightArea[] = [
             hint: v('ali_match_mango', 'El mango crece en un árbol.'),
           },
           {
-            id: 'agua',
-            left: { art: 'agua', label: 'Agua' },
-            right: { art: 'nube-gris', label: 'Lluvia' },
-            hint: v('ali_match_agua', 'El agua viene de la lluvia, de las nubes.'),
+            id: 'verduras',
+            left: { art: 'verduras', label: 'Verduras' },
+            right: { art: 'huerta', label: 'Huerta' },
+            hint: v('ali_match_verduras', 'Las verduras crecen en la huerta.'),
           },
         ],
       },
@@ -2466,7 +2466,7 @@ export const RIGHT_AREAS: readonly RightArea[] = [
             'Ahora una amiga cuenta su idea. Si alguien la interrumpe gritando, tócalo para que espere su turno.',
           ),
           shout: '¡Yo, yo!',
-          calm: v('opi_talk_shh', '¡Shh! Espera tu turno con la mano arriba.'),
+          calm: v('opi_talk_turno', 'Espera tu turno con la mano arriba.'),
           missed: v('opi_talk_l2_miss', '¡Uy! La interrumpieron. Toca rápido al amigo que grita.'),
           notThat: v('opi_talk_l2_no', 'Ese amigo está escuchando. Toca al que grita.'),
           speech: v(

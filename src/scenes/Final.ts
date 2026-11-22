@@ -557,12 +557,14 @@ export default class FinalScene extends Phaser.Scene {
     wrap.id = 'diploma-name';
     wrap.setAttribute(
       'style',
-      'position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(43,40,72,.55);font-family:"Baloo 2","Nunito",system-ui,sans-serif',
+      // Arriba (no centrado): con el celular de lado el teclado tapa casi toda la pantalla
+      // y el cuadro debe quedar visible por encima del teclado.
+      'position:absolute;inset:0;z-index:30;display:flex;align-items:flex-start;justify-content:center;padding-top:max(10px,4vh);overflow:auto;background:rgba(43,40,72,.55);font-family:"Baloo 2","Nunito",system-ui,sans-serif',
     );
     wrap.innerHTML = `
-      <form style="background:#fff8e7;border:4px solid #2b2848;border-radius:22px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;width:min(420px,86vw);box-shadow:0 8px 0 rgba(43,40,72,.3)">
-        <label for="diploma-name-input" style="font-size:24px;font-weight:800;color:#2b2848;text-align:center">¿Cómo te llamas?</label>
-        <input id="diploma-name-input" maxlength="24" autocomplete="off" style="font:800 26px 'Baloo 2','Nunito',sans-serif;padding:8px 14px;border:3px solid #2b2848;border-radius:14px;text-align:center;color:#2b2848" />
+      <form style="background:#fff8e7;border:4px solid #2b2848;border-radius:22px;padding:14px 20px;display:flex;flex-direction:column;gap:10px;width:min(420px,86vw);box-shadow:0 8px 0 rgba(43,40,72,.3)">
+        <label for="diploma-name-input" style="font-size:22px;font-weight:800;color:#2b2848;text-align:center">¿Cómo te llamas?</label>
+        <input id="diploma-name-input" type="text" maxlength="24" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" inputmode="text" style="font:800 26px 'Baloo 2','Nunito',sans-serif;padding:8px 14px;border:3px solid #2b2848;border-radius:14px;text-align:center;color:#2b2848" />
         <div style="display:flex;gap:12px;justify-content:center">
           <button type="button" data-act="cancel" style="font:800 20px 'Baloo 2',sans-serif;min-height:48px;padding:6px 18px;border:3px solid #2b2848;border-radius:999px;background:#fff;color:#2b2848">Cancelar</button>
           <button type="submit" style="font:800 20px 'Baloo 2',sans-serif;min-height:48px;padding:6px 24px;border:3px solid #2b2848;border-radius:999px;background:#ffc93c;color:#2b2848">Listo</button>
@@ -573,7 +575,12 @@ export default class FinalScene extends Phaser.Scene {
     const input = wrap.querySelector('input');
     if (input) {
       input.value = GameState.playerName;
-      window.setTimeout(() => input.focus(), 50);
+      // Enfocar dentro del mismo toque: así el celular abre el teclado (iPhone lo exige).
+      input.focus();
+      window.setTimeout(() => {
+        if (document.activeElement !== input) input.focus();
+        input.scrollIntoView({ block: 'nearest' });
+      }, 120);
     }
     wrap.querySelector('[data-act="cancel"]')?.addEventListener('click', () => this.closeDom());
     wrap.querySelector('form')?.addEventListener('submit', (e) => {

@@ -47,7 +47,6 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'maskable',
           },
-          { src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml' },
         ],
       },
       workbox: {

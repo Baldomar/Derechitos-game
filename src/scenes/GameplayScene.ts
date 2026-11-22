@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CSS, DEPTH, GAME_WIDTH } from '@/config/theme';
+import { CSS, DEPTH, GAME_HEIGHT, GAME_WIDTH } from '@/config/theme';
 import type { VoiceLine } from '@/config/levels';
 import { pickPraise } from '@/config/phrases';
 import { ensureArt, type ArtKey } from '@/art/Art';
@@ -23,6 +23,9 @@ import { vibrate } from '@/core/Device';
  * - Ayuda automática: tras 5 s sin interacción, la manita señala qué hacer y Tori repite la instrucción.
  * - Nunca hay vidas, cronómetro ni "perdiste". Los errores solo ajustan las estrellas (3/2/1).
  */
+/** Tiempo sin tocar nada antes de que Tori repita la indicación (una sola vez). */
+const REPEAT_AFTER_MS = 20000;
+
 export abstract class GameplayScene extends Phaser.Scene {
   protected errors = 0;
   protected tori!: Tori;
@@ -83,6 +86,18 @@ export abstract class GameplayScene extends Phaser.Scene {
       this.scale.off(Phaser.Scale.Events.RESIZE, placeBack),
     );
 
+    // Capa invisible que, mientras Tori da indicaciones, no deja tocar el juego
+    // (debajo del botón Volver y del globo de Tori, que siguen funcionando).
+    this.lockCount = 0;
+    this.lastTouch = 0;
+    this.instructionAt = 0;
+    this.repeated = false;
+    this.blocker = this.add
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 8000, 8000, 0x000000, 0.001)
+      .setDepth(DEPTH.ui - 1)
+      .setVisible(false);
+    this.blocker.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.nudgeListen());
+
     this.onCreateExtra();
 
     this.effects = new Effects(this);
@@ -102,8 +117,41 @@ export abstract class GameplayScene extends Phaser.Scene {
   }
 
   private async start(intro: VoiceLine[]): Promise<void> {
-    await this.say(intro);
+    await this.whileListening(this.say(intro));
+    this.instructionAt = this.time.now;
     if (this.alive) this.onIntroDone();
+  }
+
+  private blocker!: Phaser.GameObjects.Rectangle;
+  /** Para repetir la indicación con voz solo una vez y solo si el niño lleva rato sin tocar. */
+  private lastTouch = 0;
+  private instructionAt = 0;
+  private repeated = false;
+  private lockCount = 0;
+
+  /** true mientras Tori da indicaciones: el juego no responde a los toques. */
+  protected get inputLocked(): boolean {
+    return this.lockCount > 0;
+  }
+
+  /** Bloquea los toques del juego hasta que termine esa indicación (o la interrumpan). */
+  private async whileListening(p: Promise<void>): Promise<void> {
+    this.lockCount += 1;
+    this.blocker.setVisible(true).setInteractive();
+    try {
+      await p;
+    } finally {
+      this.lockCount = Math.max(0, this.lockCount - 1);
+      if (this.lockCount === 0 && this.blocker.active) {
+        this.blocker.disableInteractive().setVisible(false);
+      }
+    }
+  }
+
+  /** Si tocan mientras Tori explica: el globo da un saltito ("¡primero escucha!"). */
+  private nudgeListen(): void {
+    if (this.tweens.isTweening(this.bubble)) return;
+    this.tweens.add({ targets: this.bubble, scale: 1.06, duration: 110, yoyo: true });
   }
 
   /** Se llama cuando Tori termina la intro. */
@@ -119,9 +167,15 @@ export abstract class GameplayScene extends Phaser.Scene {
   /** Activa la ayuda automática de 5 s. */
   protected enableIdleHint(): void {
     if (this.idle) return;
+    // Si el niño no toca nada: a los 5 s sale solo la manita (sin voz). Si sigue sin tocar
+    // unos 20 s, Tori repite la indicación UNA vez; después, solo la manita.
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, () => (this.lastTouch = this.time.now));
     this.idle = new IdleHint(this, () => this.getHint(), {
       onHint: () => {
-        if (this.instruction) void this.say(this.instruction);
+        const quiet = this.time.now - Math.max(this.lastTouch, this.instructionAt);
+        if (!this.instruction || this.repeated || quiet < REPEAT_AFTER_MS) return;
+        this.repeated = true;
+        void this.say(this.instruction);
       },
     });
   }
@@ -137,7 +191,9 @@ export abstract class GameplayScene extends Phaser.Scene {
   /** Cambia la instrucción vigente y la dice. */
   protected instruct(line: VoiceLine): Promise<void> {
     this.instruction = line;
-    return this.say(line);
+    this.instructionAt = this.time.now;
+    this.repeated = false;
+    return this.whileListening(this.say(line));
   }
 
   protected wait(ms: number): Promise<void> {

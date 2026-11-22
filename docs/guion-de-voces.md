@@ -309,7 +309,7 @@ Total: 432 líneas.
 | `opi_talk_idea_trompo.mp3` | ¡Yo propongo jugar trompo! |
 | `opi_talk_l1_ok.mp3` | ¡Todos dieron su idea! Levantar la mano ayuda a que todos puedan hablar. |
 | `opi_talk_l2.mp3` | Ahora una amiga cuenta su idea. Si alguien la interrumpe gritando, tócalo para que espere su turno. |
-| `opi_talk_shh.mp3` | ¡Shh! Espera tu turno con la mano arriba. |
+| `opi_talk_turno.mp3` | Espera tu turno con la mano arriba. |
 | `opi_talk_l2_miss.mp3` | ¡Uy! La interrumpieron. Toca rápido al amigo que grita. |
 | `opi_talk_l2_no.mp3` | Ese amigo está escuchando. Toca al que grita. |
 | `opi_talk_l2_idea.mp3` | Mi idea es que juguemos todos juntos, para que nadie se quede solo. |
@@ -415,7 +415,7 @@ Total: 432 líneas.
 | `ali_match_leche.mp3` | La leche nos la da la vaca. |
 | `ali_match_huevo.mp3` | Los huevos los pone la gallina. |
 | `ali_match_mango.mp3` | El mango crece en un árbol. |
-| `ali_match_agua.mp3` | El agua viene de la lluvia, de las nubes. |
+| `ali_match_verduras.mp3` | Las verduras crecen en la huerta. |
 | `ali_share_intro1.mp3` | ¡Desafío final! Todos los niños tienen derecho a comer. |
 | `ali_share_intro2.mp3` | Arrastra la comida a los platos. Todos deben tener lo mismo. |
 | `ali_share_unfair.mp3` | ¡Espera! Ese amigo ya tiene más. Dale a otro amigo. |

@@ -166,6 +166,7 @@ export default class LabScene extends Phaser.Scene {
     add('jocote', 630, 540, fruit(0xe8505b, true));
 
     // ----- Ayuda automática (5 s sin tocar) -----
+    let hinted = false; // la pista con voz, una sola vez; después solo la manita
     new IdleHint(
       this,
       () => {
@@ -174,7 +175,13 @@ export default class LabScene extends Phaser.Scene {
           ? { kind: 'drag', from: next.homePosition, to: { x: zone.x, y: zone.y } }
           : null;
       },
-      { onHint: () => void bubble.say(GENERIC_HINT) },
+      {
+        onHint: () => {
+          if (hinted) return;
+          hinted = true;
+          void bubble.say(GENERIC_HINT);
+        },
+      },
     );
 
     this.time.delayedCall(
