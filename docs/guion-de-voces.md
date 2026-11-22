@@ -42,6 +42,8 @@ Total: 432 líneas.
 | `villa_start.mp3` | Empieza por la zona de la salud. ¡Tócala! |
 | `hub_games.mp3` | Toca un juego para empezar. Cuando termines los juegos, se abren los desafíos. |
 | `hub_locked.mp3` | Este desafío se abre cuando termines todos los juegos. |
+| `hub_game_locked.mp3` | Este juego se abre cuando termines el juego anterior. |
+| `hub_challenge_locked.mp3` | Este reto se abre cuando termines el reto anterior. |
 | `hub_final_locked.mp3` | Completa los otros desafíos para abrir el desafío final. |
 | `hub_soon.mp3` | ¡Este juego llegará muy pronto! |
 | `try_again.mp3` | ¡Inténtalo otra vez! |

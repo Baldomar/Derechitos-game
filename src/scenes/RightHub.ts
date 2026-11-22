@@ -8,7 +8,13 @@ import {
   type RightArea,
 } from '@/config/rights';
 import type { VoiceLine } from '@/config/levels';
-import { HUB_FINAL_LOCKED, HUB_LOCKED, HUB_SOON } from '@/config/phrases';
+import {
+  HUB_CHALLENGE_LOCKED,
+  HUB_FINAL_LOCKED,
+  HUB_GAME_LOCKED,
+  HUB_LOCKED,
+  HUB_SOON,
+} from '@/config/phrases';
 import { ensureArt, tex, type ArtKey } from '@/art/Art';
 import { gameIcon } from '@/art/GameIcons';
 import { addBackdrop } from '@/components/Backdrop';
@@ -59,7 +65,7 @@ const DECOR: Partial<Record<string, ArtKey>> = {
 /** Derechos ya explicados en esta sesión (para no repetir la explicación en cada regreso). */
 const explained = new Set<string>();
 
-type CardState = 'open' | 'locked' | 'final-locked' | 'soon';
+type CardState = 'open' | 'locked' | 'game-locked' | 'challenge-locked' | 'final-locked' | 'soon';
 
 /** Versión oscura de un color (para la barra del título y el botón "Jugar"; contraste con texto blanco). */
 function darken(color: number, f = 0.62): number {
@@ -440,10 +446,16 @@ export default class RightHubScene extends Phaser.Scene {
     const isNext = this.next === a;
     const stars = playable ? GameState.getActivityStars(r.id, a.id) : 0;
     const done = stars > 0;
+    // Los juegos se abren en orden: solo el que toca (y los ya jugados) se pueden tocar.
+    const locked = playable && !GameState.gameUnlocked(r, a.id);
 
     const g = this.add.graphics();
     g.fillStyle(COLORS.ink, 0.22).fillRoundedRect(-w / 2, -h / 2 + 8, w, h, 22);
-    if (playable) {
+    if (locked) {
+      g.fillStyle(0xeef1f6).fillRoundedRect(-w / 2, -h / 2, w, h, 22);
+      g.lineStyle(4, 0x9aa5b8);
+      dashedRoundRect(g, -w / 2, -h / 2, w, h, 22);
+    } else if (playable) {
       g.fillStyle(COLORS.white).fillRoundedRect(-w / 2, -h / 2, w, h, 22);
       g.lineStyle(isNext ? 7 : 5, isNext ? COLORS.sun : COLORS.ink).strokeRoundedRect(
         -w / 2,
@@ -471,9 +483,19 @@ export default class RightHubScene extends Phaser.Scene {
     const tile = this.add.graphics();
     tile.lineStyle(3, COLORS.ink, 0.85).strokeRoundedRect(-48, -h / 2 + 16, 96, 92, 18);
     parts.push(thumb, tile);
+    if (locked) {
+      thumb.setAlpha(0.55);
+      parts.push(this.add.circle(40, -h / 2 + 100, 19, COLORS.white).setStrokeStyle(3, COLORS.ink));
+      parts.push(addLockIcon(this, 40, -h / 2 + 102, 0.46));
+    }
     parts.push(addTitle(this, 0, 28, a.title, w < 270 ? 19 : 22, { wrap: w - 30 }));
 
-    if (!playable) {
+    if (locked) {
+      const first = r.games.findIndex(
+        (x) => isPlayable(x) && GameState.getActivityStars(r.id, x.id) === 0,
+      );
+      parts.push(...this.tagPill(0, 68, `Termina el juego ${first + 1}`, COLORS.white, '#4A4F66'));
+    } else if (!playable) {
       parts.push(...this.tagPill(0, 68, '¡Sorpresa pronto!', COLORS.pink, '#2B2848'));
     } else if (isNext) {
       parts.push(...this.playPill(0, 68));
@@ -489,7 +511,7 @@ export default class RightHubScene extends Phaser.Scene {
       card.add(this.nextTab(w / 2 - 54, -h / 2 + 2));
       this.hintTarget = { x, y };
     }
-    this.makeTappable(card, a, playable ? 'open' : 'soon', i);
+    this.makeTappable(card, a, !playable ? 'soon' : locked ? 'game-locked' : 'open', i);
   }
 
   /** Etiqueta redondeada de color (¡Listo!, ¡Sorpresa pronto!, motivo del candado…). */
@@ -578,7 +600,8 @@ export default class RightHubScene extends Phaser.Scene {
   private stateOf(a: Activity): CardState {
     if (!isPlayable(a)) return 'soon';
     if (GameState.challengeUnlocked(this.right, a.id)) return 'open';
-    return a.medal && GameState.gamesDone(this.right) ? 'final-locked' : 'locked';
+    if (!GameState.gamesDone(this.right)) return 'locked';
+    return a.medal ? 'final-locked' : 'challenge-locked';
   }
 
   /** Motivo del candado: "Falta 1 juego" / "Gana los 2 retos". */
@@ -590,6 +613,11 @@ export default class RightHubScene extends Phaser.Scene {
     ).length;
     if (state === 'locked' && missingGames > 0) {
       return missingGames === 1 ? 'Falta 1 juego' : `Faltan ${missingGames} juegos`;
+    }
+    if (state === 'challenge-locked') {
+      const list = r.challenges.filter(isPlayable);
+      const prev = list.findIndex((c) => GameState.getActivityStars(r.id, c.id) === 0);
+      return `Termina el reto ${r.games.length + r.challenges.indexOf(list[prev] ?? a) + 1}`;
     }
     const others = r.challenges.filter((c) => isPlayable(c) && c !== a).length;
     return `Gana ${others === 1 ? 'el otro reto' : `los ${others} retos`}`;
@@ -707,9 +735,15 @@ export default class RightHubScene extends Phaser.Scene {
         onComplete: () => card.setAngle(0),
       });
       this.tori.setMood('think');
-      void this.bubble.say(
-        state === 'soon' ? HUB_SOON : state === 'final-locked' ? HUB_FINAL_LOCKED : HUB_LOCKED,
-      );
+      const line = {
+        soon: HUB_SOON,
+        'final-locked': HUB_FINAL_LOCKED,
+        'game-locked': HUB_GAME_LOCKED,
+        'challenge-locked': HUB_CHALLENGE_LOCKED,
+        locked: HUB_LOCKED,
+        open: HUB_LOCKED,
+      }[state];
+      void this.bubble.say(line);
       return;
     }
     this.tweens.add({

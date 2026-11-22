@@ -100,6 +100,14 @@ export const HUB_LOCKED: VoiceLine = {
   id: 'hub_locked',
   text: 'Este desafío se abre cuando termines todos los juegos.',
 };
+export const HUB_GAME_LOCKED: VoiceLine = {
+  id: 'hub_game_locked',
+  text: 'Este juego se abre cuando termines el juego anterior.',
+};
+export const HUB_CHALLENGE_LOCKED: VoiceLine = {
+  id: 'hub_challenge_locked',
+  text: 'Este reto se abre cuando termines el reto anterior.',
+};
 export const HUB_FINAL_LOCKED: VoiceLine = {
   id: 'hub_final_locked',
   text: 'Completa los otros desafíos para abrir el desafío final.',

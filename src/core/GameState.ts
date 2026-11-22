@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { LEVELS, type LevelDef } from '@/config/levels';
-import { RIGHT_AREAS, isPlayable, type RightArea } from '@/config/rights';
+import { RIGHT_AREAS, isPlayable, type Activity, type RightArea } from '@/config/rights';
 
 /**
  * Progreso del juego: estrellas, medallas, álbum y ajustes.
@@ -301,15 +301,38 @@ class GameStateStore extends Phaser.Events.EventEmitter {
     return games.length > 0 && games.every((g) => this.getActivityStars(right.id, g.id) > 0);
   }
 
-  /** ¿Se puede jugar este desafío? (el final pide además los otros desafíos). */
+  /**
+   * Se abren en orden, uno a la vez: está abierto si ya se jugó o si todos los
+   * anteriores de la lista ya están terminados.
+   */
+  private openInOrder(right: RightArea, list: readonly Activity[], id: string): boolean {
+    const playable = list.filter(isPlayable);
+    const i = playable.findIndex((x) => x.id === id);
+    if (i < 0) return true;
+    if (this.getActivityStars(right.id, id) > 0) return true;
+    return playable.slice(0, i).every((x) => this.getActivityStars(right.id, x.id) > 0);
+  }
+
+  /** ¿Se puede jugar este juego? (el primero siempre; los demás al terminar el anterior). */
+  gameUnlocked(right: RightArea, gameId: string): boolean {
+    if (this.data.unlockAll) return true;
+    return this.openInOrder(right, right.games, gameId);
+  }
+
+  /**
+   * ¿Se puede jugar este desafío? Pide todos los juegos y, después, se abren uno a uno
+   * (el desafío final, al terminar los otros).
+   */
   challengeUnlocked(right: RightArea, challengeId: string): boolean {
     if (this.data.unlockAll) return true;
     if (!this.gamesDone(right)) return false;
     const c = right.challenges.find((x) => x.id === challengeId);
-    if (!c || !isPlayable(c) || !c.medal) return true;
-    return right.challenges
-      .filter((x) => isPlayable(x) && x.id !== challengeId)
-      .every((x) => this.getActivityStars(right.id, x.id) > 0);
+    if (c && isPlayable(c) && c.medal) {
+      return right.challenges
+        .filter((x) => isPlayable(x) && x.id !== challengeId)
+        .every((x) => this.getActivityStars(right.id, x.id) > 0);
+    }
+    return this.openInOrder(right, right.challenges, challengeId);
   }
 
   hasRightMedal(right: RightArea): boolean {
